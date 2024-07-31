@@ -1,0 +1,20 @@
+surprise
+initiative
+next attack
+- type: missile
+  + area of effect:
+    * individual
+    * group
+    * all
+- type: melee
+  + subtype: weapon
+    * area of effect:
+      -- individual
+      -- group
+      -- all
+- spell
+  + type: 
+    * area of effect:
+      -- individual
+      -- group
+      -- all
