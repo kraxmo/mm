@@ -255,7 +255,7 @@ class Encounter():
             abbr = combatantdata[combatant].get("Abbr")
             participant = self.data.participants.get(abbr)
             combattype = combatantdata[combatant].get("combattype")
-            combatgroup = combatantdata[combatant].get("group").replace(';', ',')
+            combatgroup = combatantdata[combatant].get("group")
             combatsequence = combatantdata[combatant].get("seq")
             combathitpoints = combatantdata[combatant].get("hp")
             combatinitiative = 0
