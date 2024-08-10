@@ -161,7 +161,7 @@ class MeleeManager():
             try:
                 action = self.actions_map[action_code]
             except KeyError:
-                print(f'*{action.code}* not a valid action\n')
+                print(f'*{action_code}* not a valid action\n')
                 continue
 
             try:
@@ -193,7 +193,7 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
                 raw_damage = ''
 
         if defender.combattype == encounter.COMBATTYPE_FOE:
-            earned_xp = encounter.calculate_xp(defender.hpstarting, defender.hp, damage, defender.xp)
+            earned_xp = encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp)
         else:
             raw_xp = ''
             while raw_xp == '':
@@ -204,20 +204,21 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
                     print(f'      -- {raw_xp} is not numeric. Try again')
                     raw_xp = ''
             
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpstarting, damage, defender.hp, defender.xp, earned_xp, 'spell: '+spell)
+        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, earned_xp, 'spell: '+spell+' BEFORE')
         defender.take_damage(damage)
-        encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hp)    # update db with new post-damage hp
+        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, 'spell: '+spell+' AFTER')
+        encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
         print(f'    * Cast spell {spell} on {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
     else:
         message = 'missed'
-        if (to_hit_roll == 20) or (attacker.was_hit_successful(to_hit_roll, defender.ac)):
+        if (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac)):
             if (attacker.damageperattack == None) or (len(str(attacker.damageperattack)) == 0):
                 pass
             else:
                 damageperattack = '\n    * ' + attacker.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(attacker.damageperattack.lstrip().split('|'))
                 print(damageperattack)
                 
-            if to_hit_roll == 20:
+            if to_hit_roll == encounter.ATTACK_CRITICAL_HIT:
                 message = '*Critical Hit*'
             else:
                 message = "hit"
@@ -232,14 +233,15 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
                     print(f'    * {raw_damage} is not numeric. Try again')
                     raw_damage = ''
                     
-            encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpstarting, defender.hp, damage, defender.xp, encounter.calculate_xp(defender.hpstarting, defender.hp, damage, defender.xp), message)
+            encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
             defender.take_damage(damage)
-            encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hp)    # update db with new post-damage hp
+            encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
+            encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
             print(f'    * {message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
         else:
-            encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpstarting, 0, defender.hp, defender.xp, 0, message)
+            encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, defender.xp, 0, message)
             print(f'    * {message} {defender.combattype} {defender.abbrseq}')
-            if attacker.combattype == encounter.COMBATTYPE_FRIEND:
+            if ( to_hit_roll == encounter.ATTACK_MISSED ):
                 if len(input(f'      -- Is attack cursed? ([Enter] for No, Y for Yes) ')) > 0:
                     raw_damage = ''
                     while raw_damage == '':
@@ -251,18 +253,20 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
                             print(f'    * {raw_damage} is not numeric. Try again')
                             raw_damage = ''
 
-                        raw_xp = ''
-                        raw_xp_prompt = '    * Enter penalty xp (-number): '
-                        while raw_xp == '':
-                            raw_xp = ui.get_input(raw_xp_prompt)
-                            if is_negative_number_digit(raw_xp):
-                                penalty_xp = int(raw_xp)
-                            else:
-                                print(f'      -- {raw_xp} is not numeric. Try again')
-                                raw_xp = ''
+                        if attacker.combattype == encounter.COMBATTYPE_FRIEND:
+                            raw_xp = ''
+                            raw_xp_prompt = '    * Enter penalty xp (-number): '
+                            while raw_xp == '':
+                                raw_xp = ui.get_input(raw_xp_prompt)
+                                if is_negative_number_digit(raw_xp):
+                                    penalty_xp = int(raw_xp)
+                                else:
+                                    print(f'      -- {raw_xp} is not numeric. Try again')
+                                    raw_xp = ''
 
-                    defender.take_damage(damage)
-                    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpstarting, attacker.hp, damage, 0, penalty_xp, 'cursed damage')
+                    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, damage, 0, penalty_xp, 'cursed damage BEFORE')
+                    attacker.take_damage(damage)
+                    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, 0, 0, 0, 'cursed damage AFTER')
 
 def find_next_defender(ui, attacker, combatants):
     """find next available defender"""
@@ -373,7 +377,7 @@ def get_combatant_initiative(ui, encounter, combatant):
 
         elif int(initiative) < encounter.INITIATIVE_ACTIVE_MINIMUM:
             inactive_initiative_prompt = f'     * Initiative value {initiative} is for inactive combatants. Keep it? (<Enter> = Yes, N = No) '
-            if len(input(ui.get_input(inactive_initiative_prompt))) == 0:
+            if len(ui.get_input(inactive_initiative_prompt)) == 0:
                 combatant.initiative = int(initiative)
                 inactivereason = ''
                 while len(inactivereason) == 0:
@@ -467,7 +471,7 @@ def process_load_combatants(encounter):
     for combatant in encounter.combatants:
         # update FOE combatants hit points
         if combatant.combattype == encounter.COMBATTYPE_FOE:
-            encounter.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hp)
+            encounter.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
     print(f'\n{len(encounter.combatants)} combatants loaded')
     list_combatants(encounter)
@@ -577,6 +581,7 @@ def process_attack(ui, encounter) -> bool:
     print(f'\n- {attacker.abbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
     print(f'  + Attack #{encounter.combatant_attack_number}')
 
+    # KEEP
     # spell_casting_type = 0
 
     defender = ''

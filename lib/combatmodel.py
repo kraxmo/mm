@@ -57,8 +57,8 @@ class Combatant():
         else:
             self.hp = hp
             
-        self.hpstarting = self.hp
-
+        self.hpmax = self.hp
+        
         self.xp = self.ExperienceBase + self.ExperienceAdjustment + (self.hp * self.ExperienceHitPointMultiplier)
         if self.ExperienceAddHitPoint == True:
             self.xp += self.hp
@@ -184,14 +184,18 @@ class Combatant():
     def regenerate_hitpoints(self):
         """regenerate combatant hit points"""
         self.hp += self.regenerationhitpoint
-        if self.hp > self.hpstarting:
-            self.hp = self.hpstarting
+        if self.hp > self.hpmax:
+            self.hp = self.hpmax
 
     def take_damage(self, damage):
         """record damage taken"""
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
+            return
+            
+        if self.hp > self.hpmax:
+            self.hp = self.hpmax
 
     def was_hit_successful(self, hitroll, defenderarmorclass, modifier = 0) -> bool:
         """determine 'to hit' value"""
@@ -217,6 +221,9 @@ class Encounter():
     TO_HIT_DIE_MAXIMUM           = 20
     TO_HIT_DIE_MINIMUM           = 0
     TO_HIT_DIE_SPELL             = 0
+
+    ATTACK_MISSED = 1
+    ATTACK_CRITICAL_HIT = 20
 
     COMBATTYPE_FRIEND = 'FRIEND'
     COMBATTYPE_FOE    = 'FOE'
@@ -393,7 +400,7 @@ class Encounter():
                 combatant.regenerate_hitpoints()
                 continue
 
-            if (self.regenerateafterdamage == True) and (combatant.hp < combatant.hpstarting):
+            if (self.regenerateafterdamage == True) and (combatant.hp < combatant.hpmax):
                 self.regenerationround += 1
             elif self.regenerateafterdamage == False:
                 self.regenerationround += 1
