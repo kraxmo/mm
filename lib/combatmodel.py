@@ -42,7 +42,7 @@ class Combatant():
         self.regenerationroundstart = self.RegenerationRoundStart
         self.regenerationhitpoint = self.RegenerationHitPoint
         self.regenerateafterdamage = self.RegenerateAfterDamage
-
+        
         # Assign member variables to parameters        
         self.combattype = combattype
         self.group = group
@@ -65,7 +65,7 @@ class Combatant():
         
         self.defender_abbrseq = ''
         self.inactivereason = ''
-        self.regenerateround = 0
+        self.regenerationround = 0
 
     def calculate_hitpoints(self, hitdicetypecode, hitdie, hitdice, hitdicemin, hitdicemax, hitdicemodifier, hitdievalue, hitpointstart, hitpointmin, hitpointmax) -> int:
         """calculate hit points based on variable hit point rules"""
@@ -351,7 +351,7 @@ class Encounter():
         if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
             to_hit_input = ''
             while to_hit_input == '':
-                to_hit_input = input(f"\n  + Enter 'To Hit' d{self.TO_HIT_DIE} result: ")
+                to_hit_input = input(f"\n  + Enter 'To Hit' d{self.TO_HIT_DIE} result: (0 = spell) ")
                 if to_hit_input.isnumeric() == False:
                     print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
                     to_hit_input = ''
@@ -394,19 +394,20 @@ class Encounter():
             # No regeneration
             if combatant.regenerationhitpoint == 0:
                 continue
-            
-            # No regeneration starting round and without damage taken
-            if (self.regenerationroundstart == 0) and (self.regenerateafterdamage == False):
-                combatant.regenerate_hitpoints()
-                continue
 
-            if (self.regenerateafterdamage == True) and (combatant.hp < combatant.hpmax):
-                self.regenerationround += 1
-            elif self.regenerateafterdamage == False:
-                self.regenerationround += 1
-                
-            if self.regenerationround >= self.regenerationroundstart:
+            # If combatant can regenerate hp but has no damage
+            if combatant.hp == combatant.hpmax:
+                combatant.regenerationround = 0
+                continue
+            
+            combatant.regenerationround += 1
+
+            # (No regeneration starting round specified and can regenerate without waiting) or (regeneration round specified and regeneration round >= regeneration round start
+            if ((combatant.regenerationroundstart == 0) and (combatant.regenerateafterdamage == False)) or ((combatant.regenerationroundstart > 0) and (combatant.regenerationround >= combatant.regenerationroundstart)):
+                self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, combatant.regenerationhitpoint, 0, 0, 'regenerate hit point BEFORE')
                 combatant.regenerate_hitpoints()
+                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)    # update db with new regenerated hp
+                self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, 0, 0, 0, 'regenerate hit point AFTER')
 
 # class Rule():
 #     def __init__(self, type, condition, key, value, modifier):
