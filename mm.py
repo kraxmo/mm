@@ -584,6 +584,11 @@ def process_attack(ui, encounter) -> bool:
     # KEEP
     # spell_casting_type = 0
 
+    attack_prompt = f'\n  + Skip attack? (<Enter> = No, y = Yes) '
+    attack_again = ui.get_input(attack_prompt)
+    if len(attack_again) > 0:
+        return False
+
     defender = ''
     defender = find_next_defender(ui, attacker, encounter.combatants)
     if defender == None:
