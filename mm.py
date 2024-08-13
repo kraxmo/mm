@@ -584,11 +584,14 @@ def process_attack(ui, encounter) -> bool:
     # KEEP
     # spell_casting_type = 0
 
-    attack_prompt = f'\n  + Skip attack? (<Enter> = No, y = Yes) '
-    attack_again = ui.get_input(attack_prompt)
-    if len(attack_again) > 0:
+    skip_attack_prompt = f'  + Skip attack? (<Enter> = No, y = Yes) '
+    skip_attack = ui.get_input(skip_attack_prompt)
+    if len(skip_attack) > 0:
+        print(f'  + ATTACK SKIPPED')
+        process_end_attack(ui, encounter)
         return False
 
+    print(f'  + ATTACKING...')
     defender = ''
     defender = find_next_defender(ui, attacker, encounter.combatants)
     if defender == None:
@@ -610,13 +613,16 @@ def process_attack(ui, encounter) -> bool:
     attack_prompt = f'\n  + Attack again? (<Enter> = No, y = Yes) '
     attack_again = ui.get_input(attack_prompt)
     if len(attack_again) == 0:
-        encounter.initiative -= 1
-        encounter.combatant_attack_number = 1
-        print('\n'+'-'*75)
+        process_end_attack(ui, encounter)
         return True
     else:
         encounter.combatant_attack_number += 1
         return False
+
+def process_end_attack(ui, encounter):
+    encounter.initiative -= 1
+    encounter.combatant_attack_number = 1
+    print('\n'+'-'*75)
     
 if __name__ == '__main__':
     mm = MeleeManager()
