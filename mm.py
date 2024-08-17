@@ -91,17 +91,17 @@ class GetCombatantInitiativeAction(Action):
         """get initiative for each combatant"""
         return process_combatant_initiative(encounter)
 
-class InitializeAttackRoundAction(Action):
+class InitializeRoundAction(Action):
     """initialize round for attacks"""
 
     def __init__(self):
-        super().__init__(7, 'Initialize Attack Round')
+        super().__init__(7, 'Initialize Round')
 
     def __str__(self):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        return initialize_attack_round(ui, encounter)
+        return initialize_round(ui, encounter)
     
 class QuitAction(Action):
     def __init__(self):
@@ -170,13 +170,13 @@ class MeleeManager():
             except QuitException:
                 break
 
-def delete_dead_opponents(encounter):
+def delete_dead_opponents(encounter) -> None:
     encounter.data.delete_dead_foes()
     for combatant in encounter.combatants:
         if combatant.combattype == encounter.COMBATTYPE_FOE and combatant.is_dead():
             encounter.combatants.remove(combatant)
 
-def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
+def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> None:
     """determine attacker damage to defender"""
     spell_prompt = '    * Enter spell name: '
     raw_spell_damage_prompt = '    * Enter spell damage (+/-number): '
@@ -268,7 +268,7 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender):
                     attacker.take_damage(damage)
                     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, 0, 0, 0, 'cursed damage AFTER')
 
-def find_next_defender(ui, attacker, combatants):
+def find_next_defender(ui, attacker, combatants) -> cm.Combatant:
     """find next available defender"""
     defender_abbrseq = ''
     while defender_abbrseq == '':
@@ -331,7 +331,7 @@ def find_next_defender(ui, attacker, combatants):
         print(f'      -- defender {defender_abbrseq} does not exist. Try again')
         defender_abbrseq = ''
 
-def get_all_combatants_initiative(ui, encounter):
+def get_all_combatants_initiative(ui, encounter) -> bool:
     """get initiative for each combatant"""
     print('\nEnter Initiative:')
     if encounter.round > 1:
@@ -352,7 +352,7 @@ def get_all_combatants_initiative(ui, encounter):
         
     return True
 
-def get_combatant_initiative(ui, encounter, combatant):
+def get_combatant_initiative(ui, encounter, combatant) -> None:
     initiative_prompt = f"- {combatant.name}'s initiative? (<Enter> for previous value {combatant.initiative}) "
     while True:
         initiative = ui.get_input(initiative_prompt)
@@ -395,7 +395,7 @@ def get_combatant_initiative(ui, encounter, combatant):
             combatant.initiative = int(initiative)
             break
 
-def initialize_attack_round(ui, encounter):
+def initialize_round(ui, encounter) -> None:
     """initialize round for attacks"""
 
     print(f'\nRound {encounter.round} START:')
@@ -405,7 +405,6 @@ def initialize_attack_round(ui, encounter):
         list_combatants(encounter)
 
     encounter.combatant_attack_number = 1
-    return True
     
 def is_negative_number_digit(n: str) -> bool:
     """check for negative number in passed string value"""
@@ -415,7 +414,7 @@ def is_negative_number_digit(n: str) -> bool:
     except ValueError:
         return False
 
-def list_combatants(encounter):
+def list_combatants(encounter) -> None:
     """list all combatant information"""
 
     list_encounter(encounter)
@@ -423,11 +422,11 @@ def list_combatants(encounter):
     for combatant in encounter.combatants:
         print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.abbrseq} ({combatant.name} {combatant.combattype}) hp: {combatant.hp} ac: {combatant.ac} thac0: {combatant.thac0} tohitmodifier: {combatant.tohitmodifier}')
 
-def list_encounter(encounter):
+def list_encounter(encounter) -> None:
     """list encounter information"""
     print(f'\nEncounter: {encounter.encounter} Round: {encounter.round} Initiative: {encounter.initiative}')
 
-def process_combatant_initiative(ui, encounter):
+def process_combatant_initiative(ui, encounter) -> bool:
     print('\nEnter Initiative:')
     if encounter.round > 1:
         rollinitiative_prompt = f'- Re-roll initiative? (<Enter> for No, Y for Yes) '
@@ -445,7 +444,7 @@ def process_combatant_initiative(ui, encounter):
     for combatant in encounter.combatants:
         encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.Abbr, combatant.seq, combatant.group, combatant.initiative)
 
-def process_encounter_initiative(ui, encounter):
+def process_encounter_initiative(ui, encounter) -> None:
     raw_initiative = ''
     initiative_prompt = f'\nSet Initiative: (<Enter> for {encounter.initiative}) '
     while len(raw_initiative) == 0:
@@ -465,7 +464,7 @@ def process_encounter_initiative(ui, encounter):
         
     encounter.initiative = int(raw_initiative)
 
-def process_load_combatants(encounter):
+def process_load_combatants(encounter) -> None:
     """load combatants into encounter"""
     encounter.get_combatants()
     for combatant in encounter.combatants:
@@ -476,21 +475,18 @@ def process_load_combatants(encounter):
     print(f'\n{len(encounter.combatants)} combatants loaded')
     list_combatants(encounter)
 
-def process_load_participants(encounter):
+def process_load_participants(encounter) -> None:
     """load participant data from database into encounter"""
     encounter.data.load_participants()
     print(f'\n{len(encounter.data.participants)} participants loaded')
 
-def process_round(ui, encounter):
+def process_round(ui, encounter) -> None:
     """process round for each combatant"""
     print(f'\nEncounter {encounter.encounter} START')
     round_type_prompt = f'\n- Is round missile or melee? [Enter] for missile, m for melee '
     continue_attack_prompt = f'Continue attacking? (<Enter> for Yes, N for No) '
     while True:
-        if initialize_attack_round(ui, encounter) == False:
-            print('\nNo FOEs were detected')
-            break
-        
+        initialize_round(ui, encounter)
         round_raw = ''
         round_raw = ui.get_input(round_type_prompt)
         encounter.ismissileattack = (len(round_raw) == 0)
@@ -619,7 +615,7 @@ def process_attack(ui, encounter) -> bool:
         encounter.combatant_attack_number += 1
         return False
 
-def process_end_attack(ui, encounter):
+def process_end_attack(ui, encounter) -> None:
     encounter.initiative -= 1
     encounter.combatant_attack_number = 1
     print('\n'+'-'*75)

@@ -176,18 +176,18 @@ class Combatant():
             
     #     return False
 
-    def load_participant_values(self, **kwargs):
+    def load_participant_values(self, **kwargs) -> None:
         """load participant key-valued pairs into member variables"""
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def regenerate_hitpoints(self):
+    def regenerate_hitpoints(self) -> None:
         """regenerate combatant hit points"""
         self.hp += self.regenerationhitpoint
         if self.hp > self.hpmax:
             self.hp = self.hpmax
 
-    def take_damage(self, damage):
+    def take_damage(self, damage) -> None:
         """record damage taken"""
         self.hp -= damage
         if self.hp < 0:
@@ -254,7 +254,7 @@ class Encounter():
     #     def __str__(self):
     #         return f'{self.name.title()}'
 
-    def get_combatants(self):
+    def get_combatants(self) -> None:
         self.combatants = []
         self.data.load_combatants()
         combatantdata = self.data.combatants
@@ -279,10 +279,10 @@ class Encounter():
         """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
         return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
 
-    def sort_combatants_by_initative(self):
+    def sort_combatants_by_initative(self) -> None:
         self.combatants.sort(key=lambda c: c.initiative, reverse=True)
 
-    def check_duplicate_initiative(self):
+    def check_duplicate_initiative(self) -> None:
         """check for duplicate initiative and adjust"""
         self.sort_combatants_by_initative()
 
@@ -315,7 +315,7 @@ class Encounter():
 
         return combatant_count    
 
-    def count_available_combatants(self) -> int:
+    def count_available_combatants(self) -> None:
         self.friend_count = self.count_combatants(self.COMBATTYPE_FRIEND)
         self.foe_count = self.count_combatants(self.COMBATTYPE_FOE)
     
@@ -378,18 +378,18 @@ class Encounter():
         returnvalue = int((value / originalhp) * xp)
         return returnvalue
     
-    def prepare_next_round(self):
+    def prepare_next_round(self) -> None:
         """prepare next round for attack"""
         self.round += 1
         self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM
         self.regenerate_combatants()
 
-    def prepare_next_encounter(self):
+    def prepare_next_encounter(self) -> None:
         """prepare next round for attack"""
         self.encounter += 1
         self.prepare_next_round()
         
-    def regenerate_combatants(self):
+    def regenerate_combatants(self) -> None:
         for combatant in self.combatants:        
             # No regeneration
             if combatant.regenerationhitpoint == 0:
