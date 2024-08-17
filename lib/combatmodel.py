@@ -362,10 +362,16 @@ class Encounter():
                     print(f"    * 'To Hit' roll must be between {self.TO_HIT_DIE_MINIMUM} and {self.TO_HIT_DIE}. Entered {to_hit_roll} value.")
                     to_hit_input = ''
                     continue
-
-        else: # automatically roll To Hit roll
-            to_hit_roll = Dice.roll_die(self.TO_HIT_DIE)
-            print(f'\n  + Rolled {to_hit_roll}')
+        else:
+            if combatant.missileattack:
+                to_hit_input = ''
+                to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
+                if len(to_hit_input) == 0:
+                    # automatically roll To Hit roll
+                    to_hit_roll = Dice.roll_die(self.TO_HIT_DIE)
+                    print(f'\n  + Rolled {to_hit_roll}')
+                else:
+                    to_hit_roll = self.TO_HIT_DIE_SPELL
 
         return to_hit_roll
 
