@@ -171,10 +171,7 @@ class MeleeManager():
                 break
 
 def delete_dead_opponents(encounter) -> None:
-    encounter.data.delete_dead_foes()
-    for combatant in encounter.combatants:
-        if combatant.combattype == encounter.COMBATTYPE_FOE and combatant.is_dead():
-            encounter.combatants.remove(combatant)
+    encounter.delete_dead_oponents()
 
 def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> None:
     """determine attacker damage to defender"""
@@ -415,16 +412,10 @@ def is_negative_number_digit(n: str) -> bool:
         return False
 
 def list_combatants(encounter) -> None:
-    """list all combatant information"""
-
-    list_encounter(encounter)
-    print(f'\nCombatants:')
-    for combatant in encounter.combatants:
-        print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.abbrseq} ({combatant.name} {combatant.combattype}) hp: {combatant.hp} ac: {combatant.ac} thac0: {combatant.thac0} tohitmodifier: {combatant.tohitmodifier}')
+    encounter.list_combatants()
 
 def list_encounter(encounter) -> None:
-    """list encounter information"""
-    print(f'\nEncounter: {encounter.encounter} Round: {encounter.round} Initiative: {encounter.initiative}')
+    encounter.list_encounter()
 
 def process_combatant_initiative(ui, encounter) -> bool:
     print('\nEnter Initiative:')
@@ -466,19 +457,13 @@ def process_encounter_initiative(ui, encounter) -> None:
 
 def process_load_combatants(encounter) -> None:
     """load combatants into encounter"""
-    encounter.get_combatants()
-    for combatant in encounter.combatants:
-        # update FOE combatants hit points
-        if combatant.combattype == encounter.COMBATTYPE_FOE:
-            encounter.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
-
+    encounter.load_combatants()
     print(f'\n{len(encounter.combatants)} combatants loaded')
     list_combatants(encounter)
 
 def process_load_participants(encounter) -> None:
     """load participant data from database into encounter"""
-    encounter.data.load_participants()
-    print(f'\n{len(encounter.data.participants)} participants loaded')
+    encounter.load_participants()
 
 def process_round(ui, encounter) -> None:
     """process round for each combatant"""

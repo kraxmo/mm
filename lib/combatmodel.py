@@ -118,7 +118,7 @@ class Combatant():
     def can_attack(self) -> bool:
         """check if combatant can attack"""
         return self.hp > 0
-    
+
     def get_level(self, level) -> list:
         """get level of each class"""
         if level is None:
@@ -173,7 +173,6 @@ class Combatant():
     #     for classtype in self.ClassType.split(","):
     #         if classtype == CLASSTYPE_CLERIC or classtype == CLASSTYPE_DRUID or classtype == CLASSTYPE_MAGICUSER or classtype == CLASSTYPE_ILLUSIONIST or classtype == CLASSTYPE_RANGER or classtype == CLASSTYPE_PALADIN:
     #             return True
-            
     #     return False
 
     def load_participant_values(self, **kwargs) -> None:
@@ -254,6 +253,12 @@ class Encounter():
     #     def __str__(self):
     #         return f'{self.name.title()}'
 
+    def delete_dead_oponents(self) -> None:
+        self.data.delete_dead_foes()
+        for combatant in self.combatants:
+            if combatant.combattype == self.COMBATTYPE_FOE and combatant.is_dead():
+                self.combatants.remove(combatant)
+
     def get_combatants(self) -> None:
         self.combatants = []
         self.data.load_combatants()
@@ -275,6 +280,32 @@ class Encounter():
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
             
+    def list_combatants(self) -> None:
+        """list all combatant information"""
+
+        self.list_encounter()
+        print(f'\nCombatants:')
+        for combatant in self.combatants:
+            print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.abbrseq} ({combatant.name} {combatant.combattype}) hp: {combatant.hp} ac: {combatant.ac} thac0: {combatant.thac0} tohitmodifier: {combatant.tohitmodifier}')
+
+    def list_encounter(self) -> None:
+        """list encounter information"""
+        print(f'\nEncounter: {self.encounter} Round: {self.round} Initiative: {self.initiative}')
+
+    def load_combatants(self) -> None:
+        self.get_combatants()
+        for combatant in self.combatants:
+            # update FOE combatants hit points
+            if combatant.combattype == self.COMBATTYPE_FOE:
+                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+
+        print(f'\n{len(self.combatants)} combatants loaded')
+        self.list_combatants()
+
+    def load_participants(self) -> None:
+        self.data.load_participants()
+        print(f'\n{len(self.data.participants)} participants loaded')
+        
     def roll_nonplayer_initiative(self) -> int:
         """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
         return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
