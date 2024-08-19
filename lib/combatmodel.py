@@ -221,8 +221,8 @@ class Encounter():
     TO_HIT_DIE_MINIMUM           = 0
     TO_HIT_DIE_SPELL             = 0
 
-    ATTACK_MISSED = 1
-    ATTACK_CRITICAL_HIT = 20
+    ATTACK_CRITICAL_FUMBLE       = 1
+    ATTACK_CRITICAL_HIT          = 20
 
     COMBATTYPE_FRIEND = 'FRIEND'
     COMBATTYPE_FOE    = 'FOE'
