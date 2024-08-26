@@ -280,39 +280,15 @@ class Encounter():
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
             
-    def list_combatants(self) -> None:
-        """list all combatant information"""
-
-        self.list_encounter()
-        print(f'\nCombatants:')
-        for combatant in self.combatants:
-            print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.abbrseq} ({combatant.name} {combatant.combattype}) hp: {combatant.hp} ac: {combatant.ac} thac0: {combatant.thac0} tohitmodifier: {combatant.tohitmodifier}')
-
-    def list_encounter(self) -> None:
-        """list encounter information"""
-        print(f'\nEncounter: {self.encounter} Round: {self.round} Initiative: {self.initiative}')
-
-    def load_combatants(self) -> None:
-        self.get_combatants()
-        for combatant in self.combatants:
-            # update FOE combatants hit points
-            if combatant.combattype == self.COMBATTYPE_FOE:
-                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
-
-        print(f'\n{len(self.combatants)} combatants loaded')
-        self.list_combatants()
-
-    def load_participants(self) -> None:
-        self.data.load_participants()
-        print(f'\n{len(self.data.participants)} participants loaded')
-        
-    def roll_nonplayer_initiative(self) -> int:
-        """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
-        return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
-
-    def sort_combatants_by_initative(self) -> None:
-        self.combatants.sort(key=lambda c: c.initiative, reverse=True)
-
+    def calculate_xp(self, originalhp, hp, damage, xp) -> int:
+        if damage > hp:
+            value = hp
+        else:
+            value = damage
+            
+        returnvalue = int((value / originalhp) * xp)
+        return returnvalue
+    
     def check_duplicate_initiative(self) -> None:
         """check for duplicate initiative and adjust"""
         self.sort_combatants_by_initative()
@@ -406,26 +382,44 @@ class Encounter():
 
         return to_hit_roll
 
-    def calculate_xp(self, originalhp, hp, damage, xp) -> int:
-        if damage > hp:
-            value = hp
-        else:
-            value = damage
-            
-        returnvalue = int((value / originalhp) * xp)
-        return returnvalue
-    
+    def list_combatants(self) -> None:
+        """list all combatant information"""
+
+        self.list_encounter()
+        print(f'\nCombatants:')
+        for combatant in self.combatants:
+            print(f'- {combatant.combattype} {combatant.abbrseq} {combatant.name} INIT: {combatant.initiative} THAC0: {combatant.thac0} AC: {combatant.ac} HP: {combatant.hp}/{combatant.hpmax} TO-HIT(+/-): {combatant.tohitmodifier}')
+            #print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.combattype} {combatant.abbrseq} ({combatant.name}) hp/max: {combatant.hp}/{combatant.hpmax} ac/thac0: {combatant.ac}/{combatant.thac0} tohit(+/-): {combatant.tohitmodifier}')
+
+    def list_encounter(self) -> None:
+        """list encounter information"""
+        print(f'\nEncounter: {self.encounter} Round: {self.round} Initiative: {self.initiative}')
+
+    def load_combatants(self) -> None:
+        self.get_combatants()
+        for combatant in self.combatants:
+            # update FOE combatants hit points
+            if combatant.combattype == self.COMBATTYPE_FOE:
+                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+
+        print(f'\n{len(self.combatants)} combatants loaded')
+        self.list_combatants()
+
+    def load_participants(self) -> None:
+        self.data.load_participants()
+        print(f'\n{len(self.data.participants)} participants loaded')
+        
+    def prepare_next_encounter(self) -> None:
+        """prepare next round for attack"""
+        self.encounter += 1
+        self.prepare_next_round()
+        
     def prepare_next_round(self) -> None:
         """prepare next round for attack"""
         self.round += 1
         self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM
         self.regenerate_combatants()
 
-    def prepare_next_encounter(self) -> None:
-        """prepare next round for attack"""
-        self.encounter += 1
-        self.prepare_next_round()
-        
     def regenerate_combatants(self) -> None:
         for combatant in self.combatants:        
             # No regeneration
@@ -445,6 +439,13 @@ class Encounter():
                 combatant.regenerate_hitpoints()
                 self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)    # update db with new regenerated hp
                 self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, 0, 0, 0, 'regenerate hit point AFTER')
+
+    def roll_nonplayer_initiative(self) -> int:
+        """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
+        return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
+
+    def sort_combatants_by_initative(self) -> None:
+        self.combatants.sort(key=lambda c: c.initiative, reverse=True)
 
 # class Rule():
 #     def __init__(self, type, condition, key, value, modifier):
