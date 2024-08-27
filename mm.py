@@ -127,7 +127,10 @@ class UI:
 
 class MeleeManager():
     def __init__(self):
-        print('\n','='*100,'\nMELEE MANAGER','\n'+'='*100)
+        print('')
+        print('='*100)
+        print('MELEE MANAGER')
+        print('='*100)
         self.encounter = cm.Encounter()
         process_load_participants(self.encounter)
         process_load_combatants(self.encounter)
