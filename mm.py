@@ -3,6 +3,10 @@
 import abc
 import lib.combatmodel as cm
 
+EXIT_TO_MENU = "@@"
+
+class ExitToMenuException(Exception):
+    pass
 class QuitException(Exception):
     pass
 
@@ -115,7 +119,11 @@ class QuitAction(Action):
     
 class UI:
     def get_input(self, action_prompt):
-        return input(action_prompt)
+        value = input(action_prompt)
+        if value.find(EXIT_TO_MENU) > -1:
+            raise ExitToMenuException
+            
+        return value
     
     def get_numeric_input(self, action_prompt):
         while True:
@@ -130,6 +138,8 @@ class MeleeManager():
         print('')
         print('='*100)
         print('MELEE MANAGER')
+        print('-'*100)
+        print("Press '@@' at any input prompt to return to menu")
         print('='*100)
         self.encounter = cm.Encounter()
         process_load_participants(self.encounter)
@@ -169,6 +179,8 @@ class MeleeManager():
 
             try:
                 action.process(ui, self.encounter)
+                continue
+            except ExitToMenuException:
                 continue
             except QuitException:
                 break
@@ -321,6 +333,35 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             combatant.initiative = int(initiative)
             break
 
+def get_hit_roll(encounter, combatant) -> int:
+    """get to hit roll"""
+    if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
+        to_hit_input = ''
+        while to_hit_input == '':
+            to_hit_input = input(f"\n  + Enter 'To Hit' d{encounter.TO_HIT_DIE} result: (0 = spell) ")
+            if to_hit_input.isnumeric() == False:
+                print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
+                to_hit_input = ''
+                continue
+            
+            to_hit_roll = int(to_hit_input)
+            if to_hit_roll < encounter.TO_HIT_DIE_MINIMUM or to_hit_roll > encounter.TO_HIT_DIE_MAXIMUM:
+                print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE}. Entered {to_hit_roll} value.")
+                to_hit_input = ''
+                continue
+    else:
+        if combatant.missileattack:
+            to_hit_input = ''
+            to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
+            if len(to_hit_input) == 0:
+                # automatically roll To Hit roll
+                to_hit_roll = encounter.Dice.roll_die(encounter.TO_HIT_DIE)
+                print(f'\n  + Rolled {to_hit_roll}')
+            else:
+                to_hit_roll = encounter.TO_HIT_DIE_SPELL
+
+    return to_hit_roll
+
 def initialize_round(ui, encounter) -> None:
     """initialize round for attacks"""
 
@@ -400,7 +441,8 @@ def process_attack_sequence(ui, encounter) -> bool:
         specialattack = '\n    * ' + attacker.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(attacker.specialattack.lstrip().split('|'))
         print(specialattack)
         
-    to_hit_roll = encounter.get_hit_roll(attacker)
+    # to_hit_roll = encounter.get_hit_roll(attacker)
+    to_hit_roll = get_hit_roll(attacker)
     determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender)
     if defender.is_alive() == False:
         encounter.foe_count -= 1

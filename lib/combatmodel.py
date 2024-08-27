@@ -353,35 +353,6 @@ class Encounter():
             # return attacker
             return attacker
 
-    def get_hit_roll(self, combatant) -> int:
-        """get to hit roll"""
-        if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
-            to_hit_input = ''
-            while to_hit_input == '':
-                to_hit_input = input(f"\n  + Enter 'To Hit' d{self.TO_HIT_DIE} result: (0 = spell) ")
-                if to_hit_input.isnumeric() == False:
-                    print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
-                    to_hit_input = ''
-                    continue
-                
-                to_hit_roll = int(to_hit_input)
-                if to_hit_roll < self.TO_HIT_DIE_MINIMUM or to_hit_roll > self.TO_HIT_DIE_MAXIMUM:
-                    print(f"    * 'To Hit' roll must be between {self.TO_HIT_DIE_MINIMUM} and {self.TO_HIT_DIE}. Entered {to_hit_roll} value.")
-                    to_hit_input = ''
-                    continue
-        else:
-            if combatant.missileattack:
-                to_hit_input = ''
-                to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
-                if len(to_hit_input) == 0:
-                    # automatically roll To Hit roll
-                    to_hit_roll = Dice.roll_die(self.TO_HIT_DIE)
-                    print(f'\n  + Rolled {to_hit_roll}')
-                else:
-                    to_hit_roll = self.TO_HIT_DIE_SPELL
-
-        return to_hit_roll
-
     def list_combatants(self) -> None:
         """list all combatant information"""
 
