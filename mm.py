@@ -23,6 +23,7 @@ class ListCombatantsAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
+        encounter.list_encounter()
         return encounter.list_combatants()
 
 class LoadCombatParticipantsAction(Action):
@@ -55,7 +56,6 @@ class NextEncounterAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        print(__class__.__name__)
         encounter.prepare_next_encounter()
         return encounter.list_encounter()
 
@@ -175,103 +175,16 @@ def delete_dead_opponents(encounter) -> None:
 
 def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> None:
     """determine attacker damage to defender"""
-    spell_prompt = '    * Enter spell name: '
-    raw_spell_damage_prompt = '    * Enter spell damage (+/-number): '
     raw_xp_prompt = '    * Enter xp: '
     if to_hit_roll == encounter.TO_HIT_DIE_SPELL:    # spell is cast
-        spell = ui.get_input(spell_prompt)
-        raw_damage = ''
-        while raw_damage == '':
-            raw_damage = ui.get_input(raw_spell_damage_prompt)
-            if is_negative_number_digit(raw_damage):
-                damage = int(raw_damage)
-            else:
-                print(f'      -- {raw_damage} is not numeric. Try again')
-                raw_damage = ''
-
-        if defender.combattype == encounter.COMBATTYPE_FOE:
-            earned_xp = encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp)
-        else:
-            raw_xp = ''
-            while raw_xp == '':
-                raw_xp = ui.get_input(raw_xp_prompt)
-                if raw_xp.isnumeric():
-                    earned_xp = int(raw_xp)
-                else:
-                    print(f'      -- {raw_xp} is not numeric. Try again')
-                    raw_xp = ''
-            
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, earned_xp, 'spell: '+spell+' BEFORE')
-        defender.take_damage(damage)
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, 'spell: '+spell+' AFTER')
-        encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
-        print(f'    * Cast spell {spell} on {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
+        process_attack_spell(ui, encounter, attacker, defender, )
         return
-    
+
     if (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac)):
-        if (attacker.damageperattack == None) or (len(str(attacker.damageperattack)) == 0):
-            pass
-        else:
-            damageperattack = '\n    * ' + attacker.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(attacker.damageperattack.lstrip().split('|'))
-            print(damageperattack)
-            
-        if to_hit_roll == encounter.ATTACK_CRITICAL_HIT:
-            message = '*Critical Hit*'
-        else:
-            message = "hit"
-            
-        raw_damage = ''
-        raw_damage_prompt = f'\n  + Enter {message} damage: '
-        while raw_damage == '':
-            raw_damage = ui.get_input(raw_damage_prompt)
-            if raw_damage.isnumeric():
-                damage = int(raw_damage)
-            else:
-                print(f'    * {raw_damage} is not numeric. Try again')
-                raw_damage = ''
-                
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
-        defender.take_damage(damage)
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
-        encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
-        print(f'    * {message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
-        return
-    
-    message = 'missed'
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, defender.xp, 0, message)
-    print(f'    * {message} {defender.combattype} {defender.abbrseq}')
-    if ( to_hit_roll != encounter.ATTACK_CRITICAL_FUMBLE ):
+        process_attack_hit(ui, encounter, attacker, defender, to_hit_roll)
         return
 
-    # check if critically fumbled attack
-    if len(input(f'      -- Is attack fumbled/cursed? ([Enter] for No, Y for Yes) ')) == 0:
-        return
-
-    # process critical fumble
-    raw_damage = ''
-    while raw_damage == '':
-        raw_damage_prompt = f'\n  + Enter {attacker.abbr}{attacker.seq} self damage: '
-        raw_damage = ui.get_input(raw_damage_prompt)
-        if raw_damage.isnumeric():
-            damage = int(raw_damage)
-        else:
-            print(f'    * {raw_damage} is not numeric. Try again')
-            raw_damage = ''
-
-        if attacker.combattype == encounter.COMBATTYPE_FRIEND:
-            raw_xp = ''
-            raw_xp_prompt = '    * Enter penalty xp (-number): '
-            while raw_xp == '':
-                raw_xp = ui.get_input(raw_xp_prompt)
-                if is_negative_number_digit(raw_xp):
-                    penalty_xp = int(raw_xp)
-                else:
-                    print(f'      -- {raw_xp} is not numeric. Try again')
-                    raw_xp = ''
-
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, damage, 0, penalty_xp, 'fumbled/cursed damage BEFORE')
-    attacker.take_damage(damage)
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, 0, 0, 0, 'fumbled/cursed damage AFTER')
+    process_attack_miss(ui, encounter, attacker, defender, to_hit_roll)
 
 def find_next_defender(ui, attacker, combatants) -> cm.Combatant:
     """find next available defender"""
@@ -336,15 +249,20 @@ def find_next_defender(ui, attacker, combatants) -> cm.Combatant:
         print(f'      -- defender {defender_abbrseq} does not exist. Try again')
         defender_abbrseq = ''
 
-def get_all_combatants_initiative(ui, encounter) -> bool:
+def format_attack_type(encounter) -> str:
+    message = f"{'Missile' if encounter.ismissileattack else 'Melee'}"
+    return message
+    
+def get_all_combatants_initiative(ui, encounter) -> None:
     """get initiative for each combatant"""
-    print('\nEnter Initiative:')
     if encounter.round > 1:
         initiative_prompt = f'- Re-roll initiative? (<Enter> for No, Y for Yes) '
         rollinitiative = ui.get_input(initiative_prompt)
         if rollinitiative.lower() != 'y':
-            return False
+            return
             
+    encounter.list_combatants()
+    print('\nEnter Initiative:')
     for combatant in encounter.combatants:
         if combatant.CharacterType == combatant.TYPE_PLAYER_CHARACTER:
             get_combatant_initiative(ui, encounter, combatant)
@@ -355,7 +273,7 @@ def get_all_combatants_initiative(ui, encounter) -> bool:
     for combatant in encounter.combatants:
         encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative)
         
-    return True
+    return
 
 def get_combatant_initiative(ui, encounter, combatant) -> None:
     initiative_prompt = f"- {combatant.name}'s initiative? (<Enter> for previous value {combatant.initiative}) "
@@ -403,12 +321,12 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
 def initialize_round(ui, encounter) -> None:
     """initialize round for attacks"""
 
-    print(f'\nRound {encounter.round} START:')
-
+    encounter.list_encounter()
+    
     # Determine initiative for all combatants
-    if get_all_combatants_initiative(ui, encounter):
-        encounter.list_combatants()
-
+    get_all_combatants_initiative(ui, encounter)
+    
+    encounter.list_combatants()
     encounter.combatant_attack_number = 1
     
 def is_negative_number_digit(n: str) -> bool:
@@ -419,114 +337,7 @@ def is_negative_number_digit(n: str) -> bool:
     except ValueError:
         return False
 
-def process_combatant_initiative(ui, encounter) -> bool:
-    print('\nEnter Initiative:')
-    if encounter.round > 1:
-        rollinitiative_prompt = f'- Re-roll initiative? (<Enter> for No, Y for Yes) '
-        rollinitiative = ui.get_input(rollinitiative_prompt)
-        if rollinitiative.lower() != 'y':
-            return False
-            
-    for combatant in encounter.combatants:
-        if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
-            get_combatant_initiative(ui, encounter, combatant)
-        else:
-            combatant.initiative = encounter.roll_nonplayer_initiative()
-
-    encounter.check_duplicate_initiative()
-    for combatant in encounter.combatants:
-        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.Abbr, combatant.seq, combatant.group, combatant.initiative)
-
-def process_encounter_initiative(ui, encounter) -> None:
-    raw_initiative = ''
-    initiative_prompt = f'\nSet Initiative: (<Enter> for {encounter.initiative}) '
-    while len(raw_initiative) == 0:
-        raw_initiative = ui.get_input(initiative_prompt)
-        if len(raw_initiative) == 0:
-            return
-        
-        if raw_initiative.isnumeric() == False:
-            print('- Initiative must be numeric. Try again')
-            raw_initiative = ''
-            continue
-        
-        if (int(raw_initiative) < encounter.INITIATIVE_MINIMUM) or (int(raw_initiative) > encounter.INITIATIVE_ACTIVE):
-            print(f'- Initiative must be between {encounter.INITIATIVE_MINIMUM} and {encounter.INITIATIVE_ACTIVE}. Try again')
-            raw_initiative = ''
-            continue
-        
-    encounter.initiative = int(raw_initiative)
-
-def process_load_combatants(encounter) -> None:
-    """load combatants into encounter"""
-    encounter.load_combatants()
-    print(f'\n{len(encounter.combatants)} combatants loaded')
-
-def process_load_participants(encounter) -> None:
-    """load participant data from database into encounter"""
-    encounter.load_participants()
-
-def process_round(ui, encounter) -> None:
-    """process round for each combatant"""
-    print(f'\nEncounter {encounter.encounter} START')
-    round_type_prompt = f'\n- Is round missile or melee? [Enter] for missile, m for melee '
-    continue_attack_prompt = f'Continue attacking? (<Enter> for Yes, N for No) '
-    while True:
-        initialize_round(ui, encounter)
-        round_raw = ''
-        round_raw = ui.get_input(round_type_prompt)
-        encounter.ismissileattack = (len(round_raw) == 0)
-
-        while encounter.initiative > encounter.INITIATIVE_NONE:
-            encounter.count_available_combatants()
-            if encounter.foe_count == 0:
-                round_no_foes_prompt = f'- Encounter: {encounter.encounter} Round: {encounter.round} has no FOES. Continue? ([Enter] for No, y for Yes) '
-                if len(ui.get_input(round_no_foes_prompt)) == 0:
-                    delete_dead_opponents(encounter)
-                    print(f'\n Encounter: {encounter.encounter} Round: {encounter.round} END:')
-                    encounter.list_combatants()
-                    print('\n'+'-'*75)
-                    encounter.prepare_next_encounter()
-                    encounter.list_encounter()
-                    return
-            
-            checkforanotherattack = process_attack(ui, encounter)
-            
-            # check for end of normal round (initiative is set to NONE after last attacker's attack)
-            if encounter.initiative == encounter.INITIATIVE_NONE:
-                break
-            
-            if checkforanotherattack == True:
-                if len(ui.get_input(continue_attack_prompt)) > 0:
-                    delete_dead_opponents(encounter)
-                    print(f'\nRound {encounter.round} ENDED *PREMATURALLY*')
-                    encounter.list_combatants()
-                    print('\n'+'-'*75)
-                    encounter.prepare_next_round()
-                    encounter.list_encounter()
-                    return
-
-        delete_dead_opponents(encounter)
-        print(f'\nRound {encounter.round} END:')
-        continue_prompt = f'\nBegin next round? (<Enter> = Yes, n = No) '
-        next_round = ui.get_input(continue_prompt)
-        if len(next_round) == 0:
-            encounter.list_combatants()
-            print('\n'+'-'*75)
-            encounter.prepare_next_round()
-            encounter.list_encounter()
-            continue
-
-        continue_prompt = f'\nBegin next encounter? (<Enter> = Yes, n = No) '
-        next_encounter = ui.get_input(continue_prompt)
-        if len(next_encounter) == 0:
-            encounter.prepare_next_encounter()
-
-        print('\n'+'-'*75)
-        encounter.list_combatants()
-        return                
-
-def process_attack(ui, encounter) -> bool:
+def process_attack_sequence(ui, encounter) -> bool:
     """process each attack: Return True for additional post-attacks check- or False for no post-attack checks"""
     attacker = encounter.find_next_attacker()
     if attacker == None:
@@ -561,7 +372,7 @@ def process_attack(ui, encounter) -> bool:
         return False
 
     print(f'\n- {attacker.abbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
-    print(f'  + Attack #{encounter.combatant_attack_number}')
+    print(f'  + {format_attack_type(encounter)} Attack #{encounter.combatant_attack_number}')
 
     # KEEP
     # spell_casting_type = 0
@@ -570,7 +381,7 @@ def process_attack(ui, encounter) -> bool:
     skip_attack = ui.get_input(skip_attack_prompt)
     if len(skip_attack) > 0:
         print(f'  + ATTACK SKIPPED')
-        process_end_attack(ui, encounter)
+        process_attack_end(ui, encounter)
         return False
 
     print(f'  + ATTACKING...')
@@ -595,17 +406,230 @@ def process_attack(ui, encounter) -> bool:
     attack_prompt = f'\n  + Attack again? (<Enter> = No, y = Yes) '
     attack_again = ui.get_input(attack_prompt)
     if len(attack_again) == 0:
-        process_end_attack(ui, encounter)
+        process_attack_end(ui, encounter)
         return True
     else:
         encounter.combatant_attack_number += 1
         return False
 
-def process_end_attack(ui, encounter) -> None:
+def process_attack_end(ui, encounter) -> None:
     encounter.initiative -= 1
     encounter.combatant_attack_number = 1
     print('\n'+'-'*75)
+
+def process_attack_hit(ui, encounter, attacker, defender, to_hit_roll) -> None:
+    if (attacker.damageperattack == None) or (len(str(attacker.damageperattack)) == 0):
+        pass
+    else:
+        damageperattack = '\n    * ' + attacker.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(attacker.damageperattack.lstrip().split('|'))
+        print(damageperattack)
+
+    message = format_attack_type(encounter)
+    if to_hit_roll == encounter.ATTACK_CRITICAL_HIT:
+        message += " *Critical Hit*"
+    else:
+        message += " hit"
+        
+    raw_damage = ''
+    raw_damage_prompt = f'\n  + Enter {message} damage: '
+    while raw_damage == '':
+        raw_damage = ui.get_input(raw_damage_prompt)
+        if raw_damage.isnumeric():
+            damage = int(raw_damage)
+        else:
+            print(f'    * {raw_damage} is not numeric. Try again')
+            raw_damage = ''
+            
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
+    defender.take_damage(damage)
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
+    encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    print(f'    * {message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
+    return
+
+def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
+    message = format_attack_type(encounter) + " missed"
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, defender.xp, 0, message)
+    print(f'    * {message} {defender.combattype} {defender.abbrseq}')
+    if ( to_hit_roll != encounter.ATTACK_CRITICAL_FUMBLE ):
+        return
+
+    # check if critically fumbled attack
+    if len(input(f'      -- Is attack fumbled/cursed? ([Enter] for No, Y for Yes) ')) == 0:
+        return
+
+    # process critical fumble
+    raw_damage = ''
+    while raw_damage == '':
+        raw_damage_prompt = f'\n  + Enter {attacker.abbr}{attacker.seq} self damage: '
+        raw_damage = ui.get_input(raw_damage_prompt)
+        if raw_damage.isnumeric():
+            damage = int(raw_damage)
+        else:
+            print(f'    * {raw_damage} is not numeric. Try again')
+            raw_damage = ''
+
+        if attacker.combattype == encounter.COMBATTYPE_FRIEND:
+            raw_xp = ''
+            raw_xp_prompt = '    * Enter penalty xp (-number): '
+            while raw_xp == '':
+                raw_xp = ui.get_input(raw_xp_prompt)
+                if is_negative_number_digit(raw_xp):
+                    penalty_xp = int(raw_xp)
+                else:
+                    print(f'      -- {raw_xp} is not numeric. Try again')
+                    raw_xp = ''
+
+    message = format_attack_type(encounter) + " fumbled/cursed damage"
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, damage, 0, penalty_xp, message+' BEFORE')
+    attacker.take_damage(damage)
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, 0, 0, 0, message+' AFTER')
+    encounter.data.update_combatant_hit_points(attacker.abbr, attacker.seq, attacker.hpmax, attacker.hp)    # update db with new post-damage hp
+    return
+
+def process_attack_spell(ui, encounter, attacker, defender) -> None:
+    spell_prompt = '    * Enter spell name: '
+    spell = ui.get_input(spell_prompt)
+    raw_damage = ''
+    raw_spell_damage_prompt = '    * Enter spell damage (+/-number): '
+    while raw_damage == '':
+        raw_damage = ui.get_input(raw_spell_damage_prompt)
+        if is_negative_number_digit(raw_damage):
+            damage = int(raw_damage)
+        else:
+            print(f'      -- {raw_damage} is not numeric. Try again')
+            raw_damage = ''
+
+    if defender.combattype == encounter.COMBATTYPE_FOE:
+        earned_xp = encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp)
+    else:
+        raw_xp = ''
+        raw_xp_prompt = '    * Enter xp: '
+        while raw_xp == '':
+            raw_xp = ui.get_input(raw_xp_prompt)
+            if raw_xp.isnumeric():
+                earned_xp = int(raw_xp)
+            else:
+                print(f'      -- {raw_xp} is not numeric. Try again')
+                raw_xp = ''
+        
+    message = format_attack_type(encounter) + " spell: "+spell
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, earned_xp, message+' BEFORE')
+    defender.take_damage(damage)
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
+    encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    print(f'    * Cast spell {spell} on {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
+    return
+
+def process_combatant_initiative(ui, encounter) -> bool:
+    print('\nEnter Initiative:')
+    if encounter.round > 1:
+        rollinitiative_prompt = f'- Re-roll initiative? (<Enter> for No, Y for Yes) '
+        rollinitiative = ui.get_input(rollinitiative_prompt)
+        if rollinitiative.lower() != 'y':
+            return False
+            
+    for combatant in encounter.combatants:
+        if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
+            get_combatant_initiative(ui, encounter, combatant)
+        else:
+            combatant.initiative = encounter.roll_nonplayer_initiative()
+
+    encounter.check_duplicate_initiative()
+    for combatant in encounter.combatants:
+        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.Abbr, combatant.seq, combatant.group, combatant.initiative)
+
+def process_encounter_initiative(ui, encounter) -> None:
+    raw_initiative = ''
+    initiative_prompt = f'\nSet Initiative: (<Enter> for current: {encounter.initiative}, min/max: {encounter.INITIATIVE_MINIMUM}/{encounter.INITIATIVE_MAXIMUM}) '
+    while len(raw_initiative) == 0:
+        raw_initiative = ui.get_input(initiative_prompt)
+        if len(raw_initiative) == 0:
+            return
+        
+        if raw_initiative.isnumeric() == False:
+            print('- Initiative must be numeric. Try again')
+            raw_initiative = ''
+            continue
+        
+        if (int(raw_initiative) < encounter.INITIATIVE_MINIMUM) or (int(raw_initiative) > encounter.INITIATIVE_MAXIMUM):
+            print(f'- Initiative must be between {encounter.INITIATIVE_MINIMUM} and {encounter.INITIATIVE_MAXIMUM}. Try again')
+            raw_initiative = ''
+            continue
+        
+    encounter.initiative = int(raw_initiative)
+
+def process_load_combatants(encounter) -> None:
+    """load combatants into encounter"""
+    encounter.list_encounter()
+    encounter.load_combatants()
     
+def process_load_participants(encounter) -> None:
+    """load participant data from database into encounter"""
+    encounter.load_participants()
+
+def process_round(ui, encounter) -> None:
+    """process round for each combatant"""
+    round_type_prompt = f'- Is round missile or melee? [Enter] for missile, m for melee '
+    continue_attack_prompt = f'Continue attacking? (<Enter> for Yes, N for No) '
+    while True:
+        initialize_round(ui, encounter)
+        print(f'\nRound: {encounter.round}:')
+        round_raw = ''
+        round_raw = ui.get_input(round_type_prompt)
+        encounter.ismissileattack = (len(round_raw) == 0)
+        print(f'\nRound: {encounter.round} | {format_attack_type(encounter)} Attacks')
+
+        while encounter.initiative > encounter.INITIATIVE_NONE:
+            encounter.count_available_combatants()
+            if encounter.foe_count == 0:
+                round_no_foes_prompt = f'- Encounter: {encounter.encounter} Round: {encounter.round} has no FOES. Continue? ([Enter] for No, y for Yes) '
+                if len(ui.get_input(round_no_foes_prompt)) == 0:
+                    delete_dead_opponents(encounter)
+                    print(f'\n Encounter: {encounter.encounter} Round: {encounter.round} END:')
+                    encounter.list_combatants()
+                    print('\n'+'-'*75)
+                    encounter.prepare_next_encounter()
+                    encounter.list_encounter()
+                    return
+            
+            checkforanotherattack = process_attack_sequence(ui, encounter)
+            
+            # check for end of normal round (initiative is set to NONE after last attacker's attack)
+            if encounter.initiative == encounter.INITIATIVE_NONE:
+                break
+            
+            if checkforanotherattack == True:
+                if len(ui.get_input(continue_attack_prompt)) > 0:
+                    delete_dead_opponents(encounter)
+                    print(f'\nRound {encounter.round} ENDED *PREMATURALLY*')
+                    encounter.list_combatants()
+                    print('\n'+'-'*75)
+                    encounter.prepare_next_round()
+                    encounter.list_encounter()
+                    return
+
+        delete_dead_opponents(encounter)
+        print(f'\nRound {encounter.round} END:')
+        continue_prompt = f'\nBegin next round? (<Enter> = Yes, n = No) '
+        next_round = ui.get_input(continue_prompt)
+        if len(next_round) == 0:
+            print('\n'+'-'*75)
+            encounter.prepare_next_round()
+            encounter.list_encounter()
+            encounter.list_combatants()
+            continue
+
+        continue_prompt = f'\nBegin next encounter? (<Enter> = Yes, n = No) '
+        next_encounter = ui.get_input(continue_prompt)
+        if len(next_encounter) == 0:
+            encounter.prepare_next_encounter()
+
+        print('\n'+'-'*75)
+        encounter.list_encounter()
+        encounter.list_combatants()
+        return                
+
 if __name__ == '__main__':
     mm = MeleeManager()
     mm.main()

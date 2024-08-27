@@ -385,15 +385,19 @@ class Encounter():
     def list_combatants(self) -> None:
         """list all combatant information"""
 
-        self.list_encounter()
         print(f'\nCombatants:')
+        print('='*81)
+        print(f' TYPE  | ABBRSEQ  NAME             | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-')
+        print(f'------ | -------- ---------------- | ---- | ----- | -- | ------ | ------ | ------')
         for combatant in self.combatants:
-            print(f'- {combatant.combattype} {combatant.abbrseq} {combatant.name} INIT: {combatant.initiative} THAC0: {combatant.thac0} AC: {combatant.ac} HP: {combatant.hp}/{combatant.hpmax} TO-HIT(+/-): {combatant.tohitmodifier}')
-            #print(f'- init: {combatant.initiative} group: {combatant.group} {combatant.combattype} {combatant.abbrseq} ({combatant.name}) hp/max: {combatant.hp}/{combatant.hpmax} ac/thac0: {combatant.ac}/{combatant.thac0} tohit(+/-): {combatant.tohitmodifier}')
+            print(f'{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(16)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.tohitmodifier).rjust(2)}   |   {str(0).rjust(2)}')
+        
+        print('='*81)
+        
 
     def list_encounter(self) -> None:
         """list encounter information"""
-        print(f'\nEncounter: {self.encounter} Round: {self.round} Initiative: {self.initiative}')
+        print(f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}')
 
     def load_combatants(self) -> None:
         self.get_combatants()
@@ -402,8 +406,9 @@ class Encounter():
             if combatant.combattype == self.COMBATTYPE_FOE:
                 self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
-        print(f'\n{len(self.combatants)} combatants loaded')
         self.list_combatants()
+        print(f'{len(self.combatants)} combatants loaded')
+
 
     def load_participants(self) -> None:
         self.data.load_participants()
@@ -412,11 +417,15 @@ class Encounter():
     def prepare_next_encounter(self) -> None:
         """prepare next round for attack"""
         self.encounter += 1
-        self.prepare_next_round()
+        self.prepare_next_round(True)
         
-    def prepare_next_round(self) -> None:
+    def prepare_next_round(self, reset=False) -> None:
         """prepare next round for attack"""
-        self.round += 1
+        if reset:
+            self.round = 1
+        else:
+            self.round += 1
+            
         self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM
         self.regenerate_combatants()
 
