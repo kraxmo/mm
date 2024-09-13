@@ -2,6 +2,7 @@
 
 import abc
 import lib.combatmodel as cm
+from lib.dice import Dice
 
 EXIT_TO_MENU = "@@"
 
@@ -136,11 +137,11 @@ class UI:
 class MeleeManager():
     def __init__(self):
         print('')
-        print('='*100)
+        print('='*95)
         print('MELEE MANAGER')
-        print('-'*100)
+        print('-'*95)
         print("Press '@@' at any input prompt to return to menu")
-        print('='*100)
+        print('='*95)
         self.encounter = cm.Encounter()
         process_load_participants(self.encounter)
         process_load_combatants(self.encounter)
@@ -195,7 +196,7 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> N
         process_attack_spell(ui, encounter, attacker, defender, )
         return
 
-    if (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac)):
+    if (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac, defender.defensemodifier)):
         process_attack_hit(ui, encounter, attacker, defender, to_hit_roll)
         return
 
@@ -335,6 +336,8 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
 
 def get_hit_roll(encounter, combatant) -> int:
     """get to hit roll"""
+    
+    # Handle PC to-hit
     if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
         to_hit_input = ''
         while to_hit_input == '':
@@ -349,17 +352,20 @@ def get_hit_roll(encounter, combatant) -> int:
                 print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE}. Entered {to_hit_roll} value.")
                 to_hit_input = ''
                 continue
-    else:
-        if combatant.missileattack:
-            to_hit_input = ''
-            to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
-            if len(to_hit_input) == 0:
-                # automatically roll To Hit roll
-                to_hit_roll = encounter.Dice.roll_die(encounter.TO_HIT_DIE)
-                print(f'\n  + Rolled {to_hit_roll}')
-            else:
-                to_hit_roll = encounter.TO_HIT_DIE_SPELL
+            
+        return to_hit_roll
 
+    # Handle NPC/M to-hit missile attack
+    if combatant.missileattack:
+        to_hit_input = ''
+        to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
+        if len(to_hit_input) > 0:
+            to_hit_roll = encounter.TO_HIT_DIE_SPELL
+            return to_hit_roll
+
+    # automatically roll to-hit melee roll
+    to_hit_roll = Dice.roll_die(encounter.TO_HIT_DIE)
+    print(f'\n  + Rolled {to_hit_roll}')
     return to_hit_roll
 
 def initialize_round(ui, encounter) -> None:
@@ -441,8 +447,7 @@ def process_attack_sequence(ui, encounter) -> bool:
         specialattack = '\n    * ' + attacker.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(attacker.specialattack.lstrip().split('|'))
         print(specialattack)
         
-    # to_hit_roll = encounter.get_hit_roll(attacker)
-    to_hit_roll = get_hit_roll(attacker)
+    to_hit_roll = get_hit_roll(encounter, attacker)
     determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender)
     if defender.is_alive() == False:
         encounter.foe_count -= 1

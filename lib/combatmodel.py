@@ -24,7 +24,7 @@ class Combatant():
     CLASS_BARBARIAN = 11
     CLASS_THIEFACROBAT = 12
     
-    def __init__(self, combattype, group, seq, hp, initiative = 0, damage = 0, tohitmodifier = 0, **kwargs):
+    def __init__(self, combattype, group, seq, hp, initiative = 0, damage = 0, attackmodifier = 0, defensemodifier = 0, **kwargs):
         # Load all raw participant values
         self.load_participant_values(**kwargs)
         
@@ -50,7 +50,8 @@ class Combatant():
         self.abbrseq = self.abbr + str(self.seq)
         self.initiative = initiative
         self.damage = damage
-        self.tohitmodifier = tohitmodifier
+        self.attackmodifier = attackmodifier
+        self.defensemodifier = defensemodifier
 
         if hp == 0:
             self.hp = self.calculate_hitpoints( self.HitDiceTypeCode, self.HitDie, self.HitDice, self.HitDiceMin, self.HitDiceMax, self.HitDiceModifier, self.HitDieValue, self.HitPointStart, self.HitPointMin, self.HitPointMax )
@@ -66,7 +67,7 @@ class Combatant():
         self.defender_abbrseq = ''
         self.inactivereason = ''
         self.regenerationround = 0
-
+        
     def calculate_hitpoints(self, hitdicetypecode, hitdie, hitdice, hitdicemin, hitdicemax, hitdicemodifier, hitdievalue, hitpointstart, hitpointmin, hitpointmax) -> int:
         """calculate hit points based on variable hit point rules"""
         DIE_FIXED                 = 'DF'   # Die Fixed
@@ -196,9 +197,9 @@ class Combatant():
         if self.hp > self.hpmax:
             self.hp = self.hpmax
 
-    def was_hit_successful(self, hitroll, defenderarmorclass, modifier = 0) -> bool:
+    def was_hit_successful(self, hitroll, defenderarmorclass, defensemodifier) -> bool:
         """determine 'to hit' value"""
-        if hitroll >= (self.thac0 - defenderarmorclass - modifier - self.tohitmodifier):
+        if hitroll >= (self.thac0 - defenderarmorclass + defensemodifier - self.attackmodifier):
             return True
         else:
             return False
@@ -270,12 +271,13 @@ class Encounter():
             combatgroup = combatantdata[combatant].get("group")
             combatsequence = combatantdata[combatant].get("seq")
             combathitpoints = combatantdata[combatant].get("hp")
+            combatattackmodifier = combatantdata[combatant].get("attackmodifier")
+            combatdefensemodifier = combatantdata[combatant].get("defensemodifier")
             combatinitiative = 0
             combatdamage = 0
-            combattohitmodifier = combatantdata[combatant].get("hitpointmodifier")
-
+        
             # instantiate new combatant
-            preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combattohitmodifier, **participant)
+            preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combatattackmodifier, combatdefensemodifier, **participant)
             
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
@@ -357,14 +359,13 @@ class Encounter():
         """list all combatant information"""
 
         print(f'\nCombatants:')
-        print('='*81)
-        print(f' TYPE  | ABBRSEQ  NAME             | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-')
-        print(f'------ | -------- ---------------- | ---- | ----- | -- | ------ | ------ | ------')
+        print('='*95)
+        print(f' TYPE  | ABBRSEQ  NAME                           | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-')
+        print(f'------ | -------- ------------------------------ | ---- | ----- | -- | ------ | ------ | ------')
         for combatant in self.combatants:
-            print(f'{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(16)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.tohitmodifier).rjust(2)}   |   {str(0).rjust(2)}')
+            print(f'{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.attackmodifier).rjust(2)}   |   {str(combatant.defensemodifier).rjust(2)}')
         
-        print('='*81)
-        
+        print('='*95)
 
     def list_encounter(self) -> None:
         """list encounter information"""
@@ -379,7 +380,6 @@ class Encounter():
 
         self.list_combatants()
         print(f'{len(self.combatants)} combatants loaded')
-
 
     def load_participants(self) -> None:
         self.data.load_participants()

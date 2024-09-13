@@ -33,7 +33,7 @@ class CombatData():
         """load encounter combatants"""
         cursor = self.conn.cursor()
     
-        sql = "select [Abbr], [combattype], [seq], [group], [hpmax], [hp], [hitpointmodifier] from [Combatant] where [isactive] = True"
+        sql = "select [Abbr], [combattype], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier] from [Combatant] where [isactive] = True"
         cursor.execute(sql)
             
         self.combatants = {}
