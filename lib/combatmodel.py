@@ -355,21 +355,27 @@ class Encounter():
             # return attacker
             return attacker
 
-    def list_combatants(self) -> None:
+    def format_attack_type(self) -> str:
+        message = f"{'Missile' if self.ismissileattack else 'Melee'}"
+        return message
+
+    def format_combatants(self) -> str:
         """list all combatant information"""
 
-        print(f'\nCombatants:')
-        print('='*95)
-        print(f' TYPE  | ABBRSEQ  NAME                           | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-')
-        print(f'------ | -------- ------------------------------ | ---- | ----- | -- | ------ | ------ | ------')
+        message = '\nCombatants:'
+        message += '\n'+'='*95
+        message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-'
+        message += f'\n------ | -------- ------------------------------ | ---- | ----- | -- | ------ | ------ | ------'
         for combatant in self.combatants:
-            print(f'{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.attackmodifier).rjust(2)}   |   {str(combatant.defensemodifier).rjust(2)}')
+            message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.attackmodifier).rjust(2)}   |   {str(combatant.defensemodifier).rjust(2)}'
         
-        print('='*95)
-
-    def list_encounter(self) -> None:
+        message += '\n'+'='*95
+        return message
+        
+    def format_encounter(self) -> str:
         """list encounter information"""
-        print(f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}')
+        message = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
+        return message
 
     def load_combatants(self) -> None:
         self.get_combatants()
@@ -378,8 +384,8 @@ class Encounter():
             if combatant.combattype == self.COMBATTYPE_FOE:
                 self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
-        self.list_combatants()
-        print(f'{len(self.combatants)} combatants loaded')
+        print(self.format_combatants())
+        print(f'\n{len(self.combatants)} combatants loaded')
 
     def load_participants(self) -> None:
         self.data.load_participants()
