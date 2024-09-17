@@ -1,7 +1,7 @@
 #mm.py
 
 import abc
-import lib.combatmodel as cm
+import lib.combatmodel as cm1
 from lib.dice import Dice
 
 EXIT_TO_MENU = "@@"
@@ -148,7 +148,7 @@ class MeleeManager():
         print('-'*self.ui.SEPARATOR_LINE_LENGTH)
         print("Press '@@' at any input prompt to return to menu")
         print('='*self.ui.SEPARATOR_LINE_LENGTH)
-        self.encounter = cm.Encounter()
+        self.encounter = cm1.Encounter()
         process_load_participants(self.encounter)
         process_load_combatants(self.encounter)
         
@@ -207,7 +207,7 @@ def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> N
 
     process_attack_miss(ui, encounter, attacker, defender, to_hit_roll)
 
-def find_next_defender(ui, attacker, combatants) -> cm.Combatant:
+def find_next_defender(ui, attacker, combatants) -> cm1.Combatant:
     """find next available defender"""
     defender_abbrseq = ''
     while defender_abbrseq == '':

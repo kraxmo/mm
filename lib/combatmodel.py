@@ -1,7 +1,7 @@
 #combatmodel.py
 
 from lib.dice import Dice
-import lib.combatdata as cd
+import lib.combatdata as cd1
 
 class Combatant():
     """defines combatants that are participants with combat settings"""
@@ -235,7 +235,7 @@ class Encounter():
     combatants = []
 
     def __init__(self) -> None:
-        self.data = cd.CombatData()
+        self.data = cd1.CombatData()
         self.get_combatants()
 
         self.encounter = 1
@@ -378,11 +378,19 @@ class Encounter():
         return message
 
     def load_combatants(self) -> None:
+        """load combatant information"""
+        if len(self.combatants) > 0:
+            combatant_saved_initiative = {combatant.abbrseq: combatant.initiative for combatant in self.combatants}
+            
         self.get_combatants()
         for combatant in self.combatants:
             # update FOE combatants hit points
             if combatant.combattype == self.COMBATTYPE_FOE:
                 self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+
+            saved_initiative = combatant_saved_initiative[combatant.abbrseq]
+            if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
+                combatant.initiative = saved_initiative
 
         print(self.format_combatants())
         print(f'\n{len(self.combatants)} combatants loaded')
