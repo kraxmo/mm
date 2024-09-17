@@ -336,6 +336,33 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
 
 def get_hit_roll(encounter, combatant) -> int:
     """get to hit roll"""
+
+    message = f"\n  + Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
+    if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
+        message += '(0 = spell) '
+    else:
+        message += '(<Enter> = autoroll, 0 = spell, 1-20 manual entry) '
+
+    to_hit_input = ''
+    while to_hit_input == '':
+        to_hit_input = input(message)
+        if to_hit_input.isnumeric() == False:
+            if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
+                print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
+                to_hit_input = ''
+                continue
+            else:
+                to_hit_roll = Dice.roll_die(encounter.TO_HIT_DIE)
+                break
+
+        to_hit_roll = int(to_hit_input)
+        if to_hit_roll < encounter.TO_HIT_DIE_MINIMUM or to_hit_roll > encounter.TO_HIT_DIE_MAXIMUM:
+            print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE}. Entered {to_hit_roll} value.")
+            to_hit_input = ''
+            continue
+        
+    print(f'\n  + Rolled {to_hit_roll}')
+    return to_hit_roll
     
     # Handle PC to-hit
     if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
@@ -555,9 +582,8 @@ def process_attack_spell(ui, encounter, attacker, defender) -> None:
             print(f'      -- {raw_damage} is not numeric. Try again')
             raw_damage = ''
 
-    if defender.combattype == encounter.COMBATTYPE_FOE:
-        earned_xp = encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp)
-    else:
+    if attacker.combattype == encounter.COMBATTYPE_FRIEND and defender.combattype == encounter.COMBATTYPE_FRIEND:
+        # Attacker is performing spell on defender friend (typically healing)
         raw_xp = ''
         raw_xp_prompt = '    * Enter xp: '
         while raw_xp == '':
@@ -567,13 +593,16 @@ def process_attack_spell(ui, encounter, attacker, defender) -> None:
             else:
                 print(f'      -- {raw_xp} is not numeric. Try again')
                 raw_xp = ''
+    else:
+        # Calculate xp
+        earned_xp = encounter.calculate_xp(defender.hpmax, defender.hp, damage, defender.xp)
         
     message = encounter.format_attack_type() + " spell: "+spell
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, earned_xp, message+' BEFORE')
     defender.take_damage(damage)
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
     encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
-    print(f'    * Cast spell {spell} on {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
+    print(f'    * Cast spell {spell} on {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
     return
 
 def process_combatant_initiative(ui, encounter) -> bool:
