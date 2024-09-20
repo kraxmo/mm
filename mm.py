@@ -245,11 +245,8 @@ def find_next_defender(ui, attacker, combatants) -> cm1.Combatant:
                         break
 
                 if defender.is_alive():
-                    if (defender.specialdefense == None) or (len(str(defender.specialdefense)) == 0):
-                        pass
-                    else:
-                        specialdefense = '\n    * ' + defender_abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(defender.specialdefense.lstrip().split('|'))
-                        print(specialdefense)
+                    special_defense_message = defender.format_special_defense()
+                    if len(special_defense_message): print(special_defense_message)
                         
                     attacker.defender_abbrseq = defender_abbrseq
                     return defender
@@ -334,7 +331,7 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             combatant.initiative = int(initiative)
             break
 
-def get_hit_roll(encounter, combatant) -> int:
+def get_hit_roll(ui, encounter, combatant) -> int:
     """get to hit roll"""
 
     message = f"\n  + Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
@@ -342,10 +339,10 @@ def get_hit_roll(encounter, combatant) -> int:
         message += '(0 = spell) '
     else:
         message += '(<Enter> = autoroll, 0 = spell, 1-20 manual entry) '
-
+        
     to_hit_input = ''
     while to_hit_input == '':
-        to_hit_input = input(message)
+        to_hit_input = ui.get_input(message)
         if to_hit_input.isnumeric() == False:
             if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
                 print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
@@ -473,13 +470,10 @@ def process_attack_sequence(ui, encounter) -> bool:
         encounter.initiative = encounter.INITIATIVE_NONE
         return
 
-    if (attacker.specialattack == None) or (len(str(attacker.specialattack)) == 0):
-        pass
-    else:
-        specialattack = '\n    * ' + attacker.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(attacker.specialattack.lstrip().split('|'))
-        print(specialattack)
-        
-    to_hit_roll = get_hit_roll(encounter, attacker)
+    special_attack_message = attacker.format_special_attacks()
+    if len(special_attack_message): print(special_attack_message)
+    
+    to_hit_roll = get_hit_roll(ui, encounter, attacker)
     determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender)
     if defender.is_alive() == False:
         encounter.foe_count -= 1

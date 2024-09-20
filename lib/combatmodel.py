@@ -120,6 +120,26 @@ class Combatant():
         """check if combatant can attack"""
         return self.hp > 0
 
+    def format_special_attacks(self) -> str:
+        """format special attack information"""
+        specialattack = ''
+        if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
+            pass
+        else:
+            specialattack = '\n    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
+        
+        return specialattack
+
+    def format_special_defense(self) -> str:
+        """format special defense information"""
+        specialdefense = ''
+        if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
+            pass
+        else:
+            specialdefense = '\n    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
+
+        return specialdefense
+
     def get_level(self, level) -> list:
         """get level of each class"""
         if level is None:
@@ -325,6 +345,7 @@ class Encounter():
         return combatant_count    
 
     def count_available_combatants(self) -> None:
+        """count available combatants"""
         self.friend_count = self.count_combatants(self.COMBATTYPE_FRIEND)
         self.foe_count = self.count_combatants(self.COMBATTYPE_FOE)
     
@@ -356,11 +377,12 @@ class Encounter():
             return attacker
 
     def format_attack_type(self) -> str:
+        """format attack type"""
         message = f"{'Missile' if self.ismissileattack else 'Melee'}"
         return message
 
     def format_combatants(self) -> str:
-        """list all combatant information"""
+        """format all combatant information"""
 
         message = '\nCombatants:'
         message += '\n'+'='*95
@@ -371,9 +393,9 @@ class Encounter():
         
         message += '\n'+'='*95
         return message
-        
+    
     def format_encounter(self) -> str:
-        """list encounter information"""
+        """format encounter information"""
         message = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
         return message
 
