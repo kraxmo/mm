@@ -8,6 +8,7 @@ EXIT_TO_MENU = "@@"
 
 class ExitToMenuException(Exception):
     pass
+
 class QuitException(Exception):
     pass
 
