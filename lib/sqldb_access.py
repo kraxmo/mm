@@ -19,8 +19,8 @@ class SQLDB_Access(SQLDB):
         print(f"database: {self.databasename}")
 
         try:
-            self.connection = py1.connect(self.__connection_string)
-            self.cursor = self.connection.cursor()
+            self.__connection = py1.connect(self.__connection_string)
+            self.cursor = self.__connection.cursor()
         except py1.DatabaseError:
             raise pyo_DatabaseError
         except py1.DataError:
@@ -33,5 +33,4 @@ class SQLDB_Access(SQLDB):
             raise Exception
 
     def close(self) -> None:
-        self.connection.close()
-                
+        self.__connection.close()

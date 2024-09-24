@@ -120,6 +120,15 @@ class Combatant():
         """check if combatant can attack"""
         return self.hp > 0
 
+    def format_damage(self) -> str:
+        damage = ''
+        if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
+            pass
+        else:
+            damage += '\n    * ' + self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
+        
+        return damage
+
     def format_special_attacks(self) -> str:
         """format special attack information"""
         specialattack = ''
@@ -127,8 +136,8 @@ class Combatant():
             pass
         else:
             specialattack = '\n    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
-        
-        return specialattack
+
+        return specialattack+self.format_damage()
 
     def format_special_defense(self) -> str:
         """format special defense information"""
@@ -238,9 +247,9 @@ class Encounter():
     INITIATIVE_MINIMUM           = INITIATIVE_INACTIVE_MINIMUM
     INITIATIVE_MAXIMUM           = INITIATIVE_ACTIVE_MAXIMUM
     TO_HIT_DIE                   = 20
-    TO_HIT_DIE_MAXIMUM           = 20
+    TO_HIT_DIE_MAXIMUM           = 30
     TO_HIT_DIE_MINIMUM           = 0
-    TO_HIT_DIE_SPELL             = 0
+    TO_HIT_DIE_SPECIAL_ATTACK    = 0
 
     ATTACK_CRITICAL_FUMBLE       = 1
     ATTACK_CRITICAL_HIT          = 20
@@ -274,34 +283,6 @@ class Encounter():
     #     def __str__(self):
     #         return f'{self.name.title()}'
 
-    def delete_dead_oponents(self) -> None:
-        self.data.delete_dead_foes()
-        for combatant in self.combatants:
-            if combatant.combattype == self.COMBATTYPE_FOE and combatant.is_dead():
-                self.combatants.remove(combatant)
-
-    def get_combatants(self) -> None:
-        self.combatants = []
-        self.data.load_combatants()
-        combatantdata = self.data.combatants
-        for combatant in combatantdata:
-            abbr = combatantdata[combatant].get("Abbr")
-            participant = self.data.participants.get(abbr)
-            combattype = combatantdata[combatant].get("combattype")
-            combatgroup = combatantdata[combatant].get("group")
-            combatsequence = combatantdata[combatant].get("seq")
-            combathitpoints = combatantdata[combatant].get("hp")
-            combatattackmodifier = combatantdata[combatant].get("attackmodifier")
-            combatdefensemodifier = combatantdata[combatant].get("defensemodifier")
-            combatinitiative = 0
-            combatdamage = 0
-        
-            # instantiate new combatant
-            preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combatattackmodifier, combatdefensemodifier, **participant)
-            
-            # append combatant to combatants list
-            self.combatants.append(preparedcombatant)
-            
     def calculate_xp(self, originalhp, hp, damage, xp) -> int:
         if damage > hp:
             value = hp
@@ -349,6 +330,12 @@ class Encounter():
         self.friend_count = self.count_combatants(self.COMBATTYPE_FRIEND)
         self.foe_count = self.count_combatants(self.COMBATTYPE_FOE)
     
+    def delete_dead_oponents(self) -> None:
+        self.data.delete_dead_foes()
+        for combatant in self.combatants:
+            if combatant.combattype == self.COMBATTYPE_FOE and combatant.is_dead():
+                self.combatants.remove(combatant)
+
     def find_next_attacker(self) -> Combatant:
         """find next available attacker"""
         for attacker in self.combatants:
@@ -383,7 +370,6 @@ class Encounter():
 
     def format_combatants(self) -> str:
         """format all combatant information"""
-
         message = '\nCombatants:'
         message += '\n'+'='*95
         message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-'
@@ -399,6 +385,29 @@ class Encounter():
         message = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
         return message
 
+    def get_combatants(self) -> None:
+        """get combatants from participant database"""
+        self.combatants = []
+        self.data.load_combatants()
+        combatantdata = self.data.combatants
+        for combatant in combatantdata:
+            abbr = combatantdata[combatant].get("Abbr")
+            participant = self.data.participants.get(abbr)
+            combattype = combatantdata[combatant].get("combattype")
+            combatgroup = combatantdata[combatant].get("group")
+            combatsequence = combatantdata[combatant].get("seq")
+            combathitpoints = combatantdata[combatant].get("hp")
+            combatattackmodifier = combatantdata[combatant].get("attackmodifier")
+            combatdefensemodifier = combatantdata[combatant].get("defensemodifier")
+            combatinitiative = 0
+            combatdamage = 0
+        
+            # instantiate new combatant
+            preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combatattackmodifier, combatdefensemodifier, **participant)
+            
+            # append combatant to combatants list
+            self.combatants.append(preparedcombatant)
+            
     def load_combatants(self) -> None:
         """load combatant information"""
         if len(self.combatants) > 0:
@@ -410,9 +419,13 @@ class Encounter():
             if combatant.combattype == self.COMBATTYPE_FOE:
                 self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
-            saved_initiative = combatant_saved_initiative[combatant.abbrseq]
-            if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
-                combatant.initiative = saved_initiative
+            # save combatant initiative (if exists)
+            try:
+                saved_initiative = combatant_saved_initiative[combatant.abbrseq]
+                if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
+                    combatant.initiative = saved_initiative
+            except:
+                pass
 
         print(self.format_combatants())
         print(f'\n{len(self.combatants)} combatants loaded')

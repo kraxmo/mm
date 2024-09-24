@@ -7,3 +7,4 @@ class SQLDB():
     def __init__(self, databasename, autocommit=True):
         self.databasename = databasename
         self.autocommit   = autocommit
+        self.__connection = None

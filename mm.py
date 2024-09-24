@@ -116,6 +116,7 @@ class QuitAction(Action):
         super().__init__(99, 'Quit')
 
     def process(self, ui, encounter):
+        encounter.data.close()
         raise QuitException
 
     def __str__(self):
@@ -195,19 +196,6 @@ class MeleeManager():
 def delete_dead_opponents(encounter) -> None:
     encounter.delete_dead_oponents()
 
-def determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender) -> None:
-    """determine attacker damage to defender"""
-    raw_xp_prompt = '    * Enter xp: '
-    if to_hit_roll == encounter.TO_HIT_DIE_SPELL:    # spell is cast
-        process_attack_spell(ui, encounter, attacker, defender, )
-        return
-
-    if (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac, defender.defensemodifier)):
-        process_attack_hit(ui, encounter, attacker, defender, to_hit_roll)
-        return
-
-    process_attack_miss(ui, encounter, attacker, defender, to_hit_roll)
-
 def find_next_defender(ui, attacker, combatants) -> cm1.Combatant:
     """find next available defender"""
     defender_abbrseq = ''
@@ -246,9 +234,6 @@ def find_next_defender(ui, attacker, combatants) -> cm1.Combatant:
                         break
 
                 if defender.is_alive():
-                    special_defense_message = defender.format_special_defense()
-                    if len(special_defense_message): print(special_defense_message)
-                        
                     attacker.defender_abbrseq = defender_abbrseq
                     return defender
                 else:
@@ -337,9 +322,9 @@ def get_hit_roll(ui, encounter, combatant) -> int:
 
     message = f"\n  + Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
     if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
-        message += '(0 = spell) '
+        message += '(0 = special attack, 1-20+ manual entry) '
     else:
-        message += '(<Enter> = autoroll, 0 = spell, 1-20 manual entry) '
+        message += '(<Enter> = autoroll, 0 = special attack, 1-20+ manual entry) '
         
     to_hit_input = ''
     while to_hit_input == '':
@@ -355,44 +340,13 @@ def get_hit_roll(ui, encounter, combatant) -> int:
 
         to_hit_roll = int(to_hit_input)
         if to_hit_roll < encounter.TO_HIT_DIE_MINIMUM or to_hit_roll > encounter.TO_HIT_DIE_MAXIMUM:
-            print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE}. Entered {to_hit_roll} value.")
+            print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE_MAXIMUM}. Entered {to_hit_roll} value.")
             to_hit_input = ''
             continue
         
     print(f'\n  + Rolled {to_hit_roll}')
     return to_hit_roll
     
-    # Handle PC to-hit
-    if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
-        to_hit_input = ''
-        while to_hit_input == '':
-            to_hit_input = input(f"\n  + Enter 'To Hit' d{encounter.TO_HIT_DIE} result: (0 = spell) ")
-            if to_hit_input.isnumeric() == False:
-                print(f"    * 'To Hit' roll of '{to_hit_input}' is not a number.")
-                to_hit_input = ''
-                continue
-            
-            to_hit_roll = int(to_hit_input)
-            if to_hit_roll < encounter.TO_HIT_DIE_MINIMUM or to_hit_roll > encounter.TO_HIT_DIE_MAXIMUM:
-                print(f"    * 'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE}. Entered {to_hit_roll} value.")
-                to_hit_input = ''
-                continue
-            
-        return to_hit_roll
-
-    # Handle NPC/M to-hit missile attack
-    if combatant.missileattack:
-        to_hit_input = ''
-        to_hit_input = input(f"\n  + Spell Attack? (<Enter> = No, Y = Yes) ")
-        if len(to_hit_input) > 0:
-            to_hit_roll = encounter.TO_HIT_DIE_SPELL
-            return to_hit_roll
-
-    # automatically roll to-hit melee roll
-    to_hit_roll = Dice.roll_die(encounter.TO_HIT_DIE)
-    print(f'\n  + Rolled {to_hit_roll}')
-    return to_hit_roll
-
 def initialize_round(ui, encounter) -> None:
     """initialize round for attacks"""
 
@@ -423,9 +377,8 @@ def process_attack_sequence(ui, encounter) -> bool:
         encounter.initiative = encounter.INITIATIVE_NONE
         return
 
-    print(encounter.format_encounter(), encounter.format_attack_type(), ' Attacks')
+    print(f"{encounter.format_encounter()} | {encounter.format_attack_type()} Attacks")
     print(encounter.format_combatants())
-    
     if attacker.is_inactive():
         message = f'\n- {attacker.abbrseq} is currently inactive.'
         if len(attacker.inactivereason) > 0:
@@ -454,9 +407,6 @@ def process_attack_sequence(ui, encounter) -> bool:
     print(f'\n- {attacker.abbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
     print(f'  + {encounter.format_attack_type()} Attack #{encounter.combatant_attack_number}')
 
-    # KEEP
-    # spell_casting_type = 0
-
     skip_attack_prompt = f'  + Skip attack? (<Enter> = No, y = Yes) '
     skip_attack = ui.get_input(skip_attack_prompt)
     if len(skip_attack) > 0:
@@ -473,9 +423,18 @@ def process_attack_sequence(ui, encounter) -> bool:
 
     special_attack_message = attacker.format_special_attacks()
     if len(special_attack_message): print(special_attack_message)
+
+    special_defense_message = defender.format_special_defense()
+    if len(special_defense_message): print(special_defense_message)
     
     to_hit_roll = get_hit_roll(ui, encounter, attacker)
-    determine_attack_damage(ui, encounter, to_hit_roll, attacker, defender)
+    if to_hit_roll == encounter.TO_HIT_DIE_SPECIAL_ATTACK:    # special attack
+        process_attack_special(ui, encounter, attacker, defender, )
+    elif (to_hit_roll == encounter.ATTACK_CRITICAL_HIT) or (attacker.was_hit_successful(to_hit_roll, defender.ac, defender.defensemodifier)):
+        process_attack_hit(ui, encounter, attacker, defender, to_hit_roll)
+    else:
+        process_attack_miss(ui, encounter, attacker, defender, to_hit_roll)
+    
     if defender.is_alive() == False:
         encounter.foe_count -= 1
         attacker.defender_abbrseq = ''
@@ -495,12 +454,8 @@ def process_attack_end(ui, encounter) -> None:
     print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
 
 def process_attack_hit(ui, encounter, attacker, defender, to_hit_roll) -> None:
-    if (attacker.damageperattack == None) or (len(str(attacker.damageperattack)) == 0):
-        pass
-    else:
-        damageperattack = '\n    * ' + attacker.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(attacker.damageperattack.lstrip().split('|'))
-        print(damageperattack)
-
+    """process attack hit"""
+    print(attacker.format_damage())
     message = encounter.format_attack_type()
     if to_hit_roll == encounter.ATTACK_CRITICAL_HIT:
         message += " *Critical Hit*"
@@ -537,6 +492,7 @@ def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
 
     # process critical fumble
     raw_damage = ''
+    penalty_xp = 0
     while raw_damage == '':
         raw_damage_prompt = f'\n  + Enter {attacker.abbr}{attacker.seq} self damage: '
         raw_damage = ui.get_input(raw_damage_prompt)
@@ -564,7 +520,7 @@ def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
     encounter.data.update_combatant_hit_points(attacker.abbr, attacker.seq, attacker.hpmax, attacker.hp)    # update db with new post-damage hp
     return
 
-def process_attack_spell(ui, encounter, attacker, defender) -> None:
+def process_attack_special(ui, encounter, attacker, defender) -> None:
     spell_prompt = '    * Enter spell name: '
     spell = ui.get_input(spell_prompt)
     raw_damage = ''
@@ -656,7 +612,6 @@ def process_round(ui, encounter) -> None:
         round_raw = ''
         round_raw = ui.get_input(round_type_prompt)
         encounter.ismissileattack = (len(round_raw) == 0)
-        print(encounter.format_encounter(), encounter.format_attack_type(), ' Attacks')
         
         while encounter.initiative > encounter.INITIATIVE_NONE:
             encounter.count_available_combatants()
@@ -682,9 +637,6 @@ def process_round(ui, encounter) -> None:
                 if len(ui.get_input(continue_attack_prompt)) > 0:
                     delete_dead_opponents(encounter)
                     print(f'\nRound {encounter.round} ENDED *PREMATURALLY*')
-                    print(encounter.format_encounter())
-                    print(encounter.format_combatants())
-                    print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
                     encounter.prepare_next_round()
                     print(encounter.format_encounter())
                     return
