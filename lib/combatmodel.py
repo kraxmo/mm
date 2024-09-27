@@ -125,7 +125,7 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            damage += '\n    * ' + self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
+            damage += '    * ' + self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
         
         return damage
 
@@ -135,7 +135,7 @@ class Combatant():
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
         else:
-            specialattack = '\n    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
+            specialattack = '    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
 
         return specialattack+self.format_damage()
 
@@ -145,7 +145,7 @@ class Combatant():
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
         else:
-            specialdefense = '\n    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
+            specialdefense = '    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
 
         return specialdefense
 

@@ -415,14 +415,14 @@ def process_attack_sequence(ui, encounter) -> bool:
         return False
 
     print(f'  + ATTACKING...')
+    special_attack_message = attacker.format_special_attacks()
+    if len(special_attack_message): print(special_attack_message)
+
     defender = ''
     defender = find_next_defender(ui, attacker, encounter.combatants)
     if defender == None:
         encounter.initiative = encounter.INITIATIVE_NONE
         return
-
-    special_attack_message = attacker.format_special_attacks()
-    if len(special_attack_message): print(special_attack_message)
 
     special_defense_message = defender.format_special_defense()
     if len(special_defense_message): print(special_defense_message)
@@ -605,7 +605,7 @@ def process_load_participants(encounter) -> None:
 
 def process_round(ui, encounter) -> None:
     """process round for each combatant"""
-    round_type_prompt = f'\n- Is round missile or melee? [Enter] for missile, m for melee '
+    round_type_prompt = f'Is round missile or melee? [Enter] for missile, m for melee '
     continue_attack_prompt = f'Continue attacking? (<Enter> for Yes, N for No) '
     while True:
         initialize_round(ui, encounter)
