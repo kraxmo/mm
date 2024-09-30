@@ -16,7 +16,7 @@ class SQLDB_Access(SQLDB):
         """Initialize the access database connector"""
         super().__init__(databasename)
         self.__connection_string = r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ='+self.databasename
-        print(f"database: {self.databasename}")
+        print(f"\nDatabase: {self.databasename}")
 
         try:
             self.__connection = py1.connect(self.__connection_string)

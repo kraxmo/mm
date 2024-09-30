@@ -336,6 +336,13 @@ class Encounter():
             if combatant.combattype == self.COMBATTYPE_FOE and combatant.is_dead():
                 self.combatants.remove(combatant)
 
+    def find_combatant(self, abbrseq) -> Combatant:
+        for combatant in self.combatants:
+            if combatant.abbrseq == abbrseq:
+                return Combatant
+            
+        return None
+    
     def find_next_attacker(self) -> Combatant:
         """find next available attacker"""
         for attacker in self.combatants:
@@ -369,15 +376,18 @@ class Encounter():
         return message
 
     def format_combatants(self) -> str:
+        SEPARATOR_LINE_LENGTH = 97
+        
         """format all combatant information"""
         message = '\nCombatants:'
-        message += '\n'+'='*95
-        message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | THAC0 | AC | HP/MAX | ATT+/- | DEF+/-'
-        message += f'\n------ | -------- ------------------------------ | ---- | ----- | -- | ------ | ------ | ------'
+        message += '\n'+'='*SEPARATOR_LINE_LENGTH
+        message += f'\n       |                                         |      |       |       |    |        | ATT | DEF'
+        message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
+        message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
         for combatant in self.combatants:
-            message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|   {str(combatant.attackmodifier).rjust(2)}   |   {str(combatant.defensemodifier).rjust(2)}'
+            message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} |  {str(combatant.defensemodifier).rjust(2)}'
         
-        message += '\n'+'='*95
+        message += '\n'+'='*SEPARATOR_LINE_LENGTH
         return message
     
     def format_encounter(self) -> str:
@@ -407,7 +417,14 @@ class Encounter():
             
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
+    
+    def is_combatant(self, abbrseq) -> bool:
+        for combatant in self.combatants:
+            if combatant.abbrseq == abbrseq:
+                return True
             
+        return False
+    
     def load_combatants(self) -> None:
         """load combatant information"""
         if len(self.combatants) > 0:
@@ -428,11 +445,11 @@ class Encounter():
                 pass
 
         print(self.format_combatants())
-        print(f'\n{len(self.combatants)} combatants loaded')
+        print(f'\nCombatants loaded: {len(self.combatants)}')
 
     def load_participants(self) -> None:
         self.data.load_participants()
-        print(f'\n{len(self.data.participants)} participants loaded')
+        print(f'\nParticipants loaded: {len(self.data.participants)}')
         
     def prepare_next_encounter(self) -> None:
         """prepare next round for attack"""
