@@ -5,6 +5,7 @@ from lib.combatdata import(
 from lib.combatmodel import(
     Combatant, 
     Encounter,
+    Saving_Throw,
 )
 
 from lib.dice import(
