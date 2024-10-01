@@ -129,6 +129,13 @@ class UI:
     INDENT_LEVEL_03 = '    * '
     INDENT_LEVEL_04 = '      -- '
     
+    def print_separator_line(self, value, newlinebefore = False):
+        newline = ''
+        if newlinebefore == True:
+            newline = '\n'
+            
+        print(f"{newline}{value*self.SEPARATOR_LINE_LENGTH}")
+    
     def get_input(self, action_prompt):
         value = input(action_prompt)
         
@@ -151,11 +158,14 @@ class MeleeManager():
         self.ui = UI()
 
         print('')
-        print('='*self.ui.SEPARATOR_LINE_LENGTH)
+        self.ui.print_separator_line('=')
+        # print('='*self.ui.SEPARATOR_LINE_LENGTH)
         print('MELEE MANAGER')
-        print('-'*self.ui.SEPARATOR_LINE_LENGTH)
+        self.ui.print_separator_line('-')
+        # print('-'*self.ui.SEPARATOR_LINE_LENGTH)
         print("Press '@@' at any input prompt to return to menu")
         print('='*self.ui.SEPARATOR_LINE_LENGTH)
+        # self.ui.print_separator_line('=')
 
         self.encounter = cm1.Encounter()
         process_load_participants(self.encounter)
@@ -459,7 +469,8 @@ def process_attack_sequence(ui, encounter) -> bool:
 def process_attack_end(ui, encounter) -> None:
     encounter.initiative -= 1
     encounter.combatant_attack_number = 1
-    print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
+    ui.print_separator_line('-', True)
+    # print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
 
 def process_attack_hit(ui, encounter, attacker, defender, to_hit_roll) -> None:
     """process attack hit"""
@@ -711,7 +722,8 @@ def process_round(ui, encounter) -> None:
                     print(f'\n Encounter: {encounter.encounter} Round: {encounter.round} END:')
                     print(encounter.format_encounter())
                     print(encounter.format_combatants())
-                    print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
+                    ui.print_separator_line('-', True)
+                    # print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
                     encounter.prepare_next_encounter()
                     print(encounter.format_encounter())
                     return
@@ -735,7 +747,8 @@ def process_round(ui, encounter) -> None:
         continue_prompt = f'\nBegin next round? (<Enter> = Yes, n = No) '
         next_round = ui.get_input(continue_prompt)
         if len(next_round) == 0:
-            print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
+            # print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
+            ui.print_separator_line('-', True)
             encounter.prepare_next_round()
             print(encounter.format_encounter())
             print(encounter.format_combatants())
@@ -745,8 +758,9 @@ def process_round(ui, encounter) -> None:
         next_encounter = ui.get_input(continue_prompt)
         if len(next_encounter) == 0:
             encounter.prepare_next_encounter()
-
-        print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
+        
+        ui.print_separator_line('-', True)
+        # print('\n'+'-'*ui.SEPARATOR_LINE_LENGTH)
         print(encounter.format_encounter())
         print(encounter.format_combatants())
         return                
