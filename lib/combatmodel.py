@@ -383,9 +383,13 @@ class Encounter():
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
         message += f'\n       |                                         |      |       |       |    |        | ATT | DEF'
         message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
-        message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
+        linecount = 0
         for combatant in self.combatants:
+            if linecount % 3 == 0:
+                message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
+                
             message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} |  {str(combatant.defensemodifier).rjust(2)}'
+            linecount += 1
         
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
         return message
