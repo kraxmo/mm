@@ -2,6 +2,7 @@
 
 from lib.dice import Dice
 import lib.combatdata as cd1
+import lib.ui as ui1
 
 class Combatant():
     """defines combatants that are participants with combat settings"""
@@ -139,7 +140,10 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            damage += '    * ' + self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
+            # damage += self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
+            damage += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Damage Per Attack:'
+            damage += '\n' + ui1.UI.INDENT_LEVEL_04
+            damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
         
         return damage
 
@@ -149,7 +153,10 @@ class Combatant():
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
         else:
-            specialattack = '    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
+            # specialattack = '    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
+            specialattack += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Attacks:'
+            specialattack += '\n' + ui1.UI.INDENT_LEVEL_04
+            specialattack += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
 
         return specialattack+self.format_damage_per_attack()
 
@@ -159,7 +166,10 @@ class Combatant():
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
         else:
-            specialdefense = '    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
+            # specialdefense = '    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
+            specialdefense += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Defenses:'
+            specialdefense += '\n' + ui1.UI.INDENT_LEVEL_04
+            specialdefense += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialdefense.lstrip().split('|'))
 
         return specialdefense
 
