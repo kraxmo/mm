@@ -63,6 +63,7 @@ class Combatant():
         self.damageperattack = self.DamagePerAttack
         self.specialattack = self.SpecialAttack
         self.specialdefense = self.SpecialDefense
+        self.notes = self.Notes
         self.regenerationroundstart = self.RegenerationRoundStart
         self.regenerationhitpoint = self.RegenerationHitPoint
         self.regenerateafterdamage = self.RegenerateAfterDamage
@@ -156,11 +157,23 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            damage += '\n' + ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Damage Per Attack:'
+            damage += ui1.UI.INDENT_LEVEL_03 + 'Damage Per Attack:'
             damage += '\n' + ui1.UI.INDENT_LEVEL_04
             damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
         
         return damage
+
+    def format_notes(self) -> str:
+        """format notes information"""
+        notes = ''
+        if (self.notes == None) or (len(str(self.notes)) == 0):
+            pass
+        else:
+            notes += ui1.UI.INDENT_LEVEL_03 + 'Notes:'
+            notes += '\n' + ui1.UI.INDENT_LEVEL_04
+            notes += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.notes.lstrip().split('|'))
+
+        return notes
 
     def format_saving_throw(self) -> str:
         """format special attack information"""
@@ -175,7 +188,7 @@ class Combatant():
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
         else:
-            specialattack += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Attacks:'
+            specialattack += ui1.UI.INDENT_LEVEL_03 + 'Special Attacks:'
             specialattack += '\n' + ui1.UI.INDENT_LEVEL_04
             specialattack += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
 
@@ -187,7 +200,7 @@ class Combatant():
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
         else:
-            specialdefense += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Defenses:'
+            specialdefense += ui1.UI.INDENT_LEVEL_03 + 'Special Defenses:'
             specialdefense += '\n' + ui1.UI.INDENT_LEVEL_04
             specialdefense += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialdefense.lstrip().split('|'))
 
@@ -310,9 +323,7 @@ class Encounter():
     def __init__(self) -> None:
         self.data = cd1.CombatData()
         self.load_saving_throws()
-        # self.load_participants()
-        # self.get_combatants()
-
+    
         self.encounter = 1
         self.round = 1
         self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM

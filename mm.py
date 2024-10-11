@@ -31,6 +31,38 @@ class ListCombatantsAction(Action):
         ui.output(encounter.format_combatants())
         return
 
+class ListCombatantsInformation(Action):
+    def __init__(self):
+        super().__init__(6, 'List Combatant Information')
+
+    def __str__(self):
+        return f'{__class__.__name__}'
+
+    def process(self, ui, encounter):
+        ui.output(f"\nCombatant Information:")
+        for combatant in encounter.combatants:
+            if combatant.combattype != encounter.COMBATTYPE_FRIEND:
+                continue
+            
+            if combatant.charactertype == cm1.Combatant.TYPE_MONSTER:
+                continue
+            
+            special_attacks = combatant.format_special_attacks()
+            special_defense = combatant.format_special_defense()
+            notes = combatant.format_notes()
+            if (len(special_attacks) + len(special_defense) + len(notes)) > 0:
+                ui.output(f"{ui.INDENT_LEVEL_02}{combatant.abbrseq}:")
+                if len(special_attacks) > 0:
+                    ui.output(f"{special_attacks}")
+                    
+                if len(special_defense) > 0:
+                    ui.output(f"{special_defense}")
+                    
+                if len(notes) > 0:
+                    ui.output(f"{notes}")
+
+        return
+
 class LoadCombatParticipantsAction(Action):
     def __init__(self):
         super().__init__(0, 'Load Combat Participants')
@@ -75,6 +107,7 @@ class MeleeManager():
             NextEncounterAction(),
             NextAttackAction(),
             SetInitiativeAction(),
+            ListCombatantsInformation(),
             QuitAction(),
             ]
 
@@ -281,6 +314,68 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             combatant.initiative = int(initiative)
             break
 
+def get_opponents(ui, encounter, attacker) -> list:
+    opponents = []
+    special_attack_opponents_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited opponents by abbrseq and/or #group: "
+    special_attack_opponents_raw = ''
+    while len(special_attack_opponents_raw) == 0:
+        special_attack_opponents_raw = get_input(ui, special_attack_opponents_message)
+        if len(special_attack_opponents_raw) == 0:
+            ui.output(f"{ui.INDENT_LEVEL_03}No opponents entered. Try again!")
+            continue
+    
+    special_attack_opponents = []
+    for special_attack_opponent_raw in special_attack_opponents_raw.split(','):
+        special_attack_opponent_raw = special_attack_opponent_raw.strip()
+        
+        # skip if empty value
+        if len(special_attack_opponent_raw) == 0:
+            continue
+        
+        # if special_attack_opponent_raw is not a group
+        if special_attack_opponent_raw[0:1] == '#':
+            special_attack_opponents.append(special_attack_opponent_raw)
+            continue
+        
+        # if special_attack_opponent_raw is in the combatant list
+        if encounter.is_combatant(special_attack_opponent_raw):
+            special_attack_opponents.append(special_attack_opponent_raw)
+            continue
+        
+        # handle missing opponent
+        missing_opponent = ''
+        missing_opponent_message = f"{ui.INDENT_LEVEL_03}Opponent \'{special_attack_opponent_raw}\' is not in the combatant list. Re-enter abbrseq or [Enter] to ignore? "
+        while missing_opponent == '':
+            missing_opponent = get_input(ui, missing_opponent_message).strip()
+            # exclude special_attack_opponent_raw
+            if len(missing_opponent) == 0:
+                break
+            
+            # accept entered group as-is
+            if missing_opponent[0:1] == '#':
+                continue
+            
+            # validate missing_opponent is in combatant list
+            if encounter.is_combatant(missing_opponent) == False:
+                missing_opponent = ''
+                continue
+
+        special_attack_opponents.append(missing_opponent)
+    
+    if len(special_attack_opponents) == 0:
+        return
+    
+    # build opponent group list
+    special_attack_groups = [group[1:] for group in special_attack_opponents if group[0:1] == '#']
+    
+    # append unique group opponents to opponent list
+    [special_attack_opponents.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_opponents)]
+
+    # get opponents (ignoring groups)
+    [opponents.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_opponents]
+    
+    return opponents
+
 def get_to_hit_roll(ui, encounter, combatant) -> int:
     """get to-hit roll value"""
     message = f"\n{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
@@ -486,68 +581,6 @@ def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
     message = encounter.format_attack_type() + " fumbled/cursed damage"
     log_hit_action(ui, encounter, attacker, defender, damage, 0, penalty_xp, message)
     return
-
-def get_opponents(ui, encounter, attacker) -> list:
-    opponents = []
-    special_attack_opponents_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited opponents by abbrseq and/or #group: "
-    special_attack_opponents_raw = ''
-    while len(special_attack_opponents_raw) == 0:
-        special_attack_opponents_raw = get_input(ui, special_attack_opponents_message)
-        if len(special_attack_opponents_raw) == 0:
-            ui.output(f"{ui.INDENT_LEVEL_03}No opponents entered. Try again!")
-            continue
-    
-    special_attack_opponents = []
-    for special_attack_opponent_raw in special_attack_opponents_raw.split(','):
-        special_attack_opponent_raw = special_attack_opponent_raw.strip()
-        
-        # skip if empty value
-        if len(special_attack_opponent_raw) == 0:
-            continue
-        
-        # if special_attack_opponent_raw is not a group
-        if special_attack_opponent_raw[0:1] == '#':
-            special_attack_opponents.append(special_attack_opponent_raw)
-            continue
-        
-        # if special_attack_opponent_raw is in the combatant list
-        if encounter.is_combatant(special_attack_opponent_raw):
-            special_attack_opponents.append(special_attack_opponent_raw)
-            continue
-        
-        # handle missing opponent
-        missing_opponent = ''
-        missing_opponent_message = f"{ui.INDENT_LEVEL_03}Opponent \'{special_attack_opponent_raw}\' is not in the combatant list. Re-enter abbrseq or [Enter] to ignore? "
-        while missing_opponent == '':
-            missing_opponent = get_input(ui, missing_opponent_message).strip()
-            # exclude special_attack_opponent_raw
-            if len(missing_opponent) == 0:
-                break
-            
-            # accept entered group as-is
-            if missing_opponent[0:1] == '#':
-                continue
-            
-            # validate missing_opponent is in combatant list
-            if encounter.is_combatant(missing_opponent) == False:
-                missing_opponent = ''
-                continue
-
-        special_attack_opponents.append(missing_opponent)
-    
-    if len(special_attack_opponents) == 0:
-        return
-    
-    # build opponent group list
-    special_attack_groups = [group[1:] for group in special_attack_opponents if group[0:1] == '#']
-    
-    # append unique group opponents to opponent list
-    [special_attack_opponents.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_opponents)]
-
-    # get opponents (ignoring groups)
-    [opponents.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_opponents]
-    
-    return opponents
 
 def process_attack_special(ui, encounter, attacker, defender) -> None:
     """process special attack (spell, multiple defenders, multiple groups)"""
