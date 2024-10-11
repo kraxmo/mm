@@ -12,22 +12,33 @@ class Combatant():
     TYPE_MONSTER = 'M'
 
     CLASSTYPE = {
-        "0": "MONSTER",
-        "1":  "CLERIC",
-        "2": "DRUID",
-        "3": "FIGHTER",
-        "4": "PALADIN",
-        "5": "RANGER",
-        "6": "MAGICUSER",
-        "7": "ILLUSIONIST",
-        "8": "THIEF",
-        "9": "ASSASSIN",
-        "10": "CAVALIER",
-        "11": "BARBARIAN",
-        "12": "THIEFACROBAT",
-    }
+            "MO": "MONSTER",
+            "CL":  "CLERIC",
+            "DR": "DRUID",
+            "FI": "FIGHTER",
+            "PA": "PALADIN",
+            "RA": "RANGER",
+            "MU": "MAGICUSER",
+            "IL": "ILLUSIONIST",
+            "TH": "THIEF",
+            "AS": "ASSASSIN",
+            "CA": "CAVALIER",
+            "BA": "BARBARIAN",
+            "TA": "THIEFACROBAT",
+        }
 
-    CLASSTYPE_SPELLCASTER = [1,2,4,5,6,7]
+    CLASSTYPE_SPELLCASTER = ["CL", "DR", "PA", "RA", "MU", "IL"]
+
+    RACETYPE = {
+        "MO": "MONSTER",
+        "DW": "DWARF",
+        "EL": "ELF",
+        "GN": "GNOME",
+        "HE": "HALF-ELF",
+        "HL": "HALFLING",
+        "HO": "HALF-ORC",
+        "HU": "HUMAN",
+    }
     
     def __init__(self, combattype, group, seq, hp, initiative = 0, damage = 0, attackmodifier = 0, defensemodifier = 0, **kwargs):
         # Load all raw participant values
@@ -36,11 +47,19 @@ class Combatant():
         # Assign member variables to database-retrieved values
         self.abbr = self.Abbr
         self.name = self.Name
-        self.ac = self.AC
-        self.missileattack = self.MissileAttack
         self.charactertype = self.CharacterType
-        self.thac0 = self.THAC0
+        self.racetype = self.RaceType
+        self.classtype = self.ClassType
+        self.level = self.Level
+        self.savingthrowclasstype = self.SavingThrowClassType
+        self.savingthrowlevel = self.SavingThrowLevel
+        self.savingthrowlevelpdm = self.SavingThrowLevelPDM
+        self.size = self.Size
         self.attacksperround = self.AttacksPerRound
+        self.ac = self.AC
+        self.thac0 = self.THAC0
+        self.defensiveadjustment = self.DefensiveAdjustment
+        self.missileattack = self.MissileAttack
         self.damageperattack = self.DamagePerAttack
         self.specialattack = self.SpecialAttack
         self.specialdefense = self.SpecialDefense
@@ -127,12 +146,9 @@ class Combatant():
 
     def format_classtype(self) -> str:
         """format class information"""
-        classtypename = ""
-        for name in self.classtype.split(','):
-            classtypename = self.CLASSTYPE.get[name]+","
-            
-        classtypename = classtypename[:-1]
-        return classtypename
+        classnames = [self.CLASSTYPE.get(name) for name in self.classtype.split(',')]
+        classname  = ','.join(classname for classname in classnames) 
+        return classname
 
     def format_damage_per_attack(self) -> str:
         """format damage per attack information"""
@@ -140,12 +156,18 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            # damage += self.abbrseq + ' Damage Per Attack:\n      -- '+'\n      -- '.join(self.damageperattack.lstrip().split('|'))
-            damage += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Damage Per Attack:'
+            damage += '\n' + ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Damage Per Attack:'
             damage += '\n' + ui1.UI.INDENT_LEVEL_04
             damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
         
         return damage
+
+    def format_saving_throw(self) -> str:
+        """format special attack information"""
+        savingthrow = f'{ui1.UI.INDENT_LEVEL_03} Saving Throw:'
+        savingthrow += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
+
+        return savingthrow
 
     def format_special_attacks(self) -> str:
         """format special attack information"""
@@ -153,7 +175,6 @@ class Combatant():
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
         else:
-            # specialattack = '    * ' + self.abbrseq + ' Special Attacks:\n      -- '+'\n      -- '.join(self.specialattack.lstrip().split('|'))
             specialattack += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Attacks:'
             specialattack += '\n' + ui1.UI.INDENT_LEVEL_04
             specialattack += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
@@ -166,7 +187,6 @@ class Combatant():
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
         else:
-            # specialdefense = '    * ' + self.abbrseq + ' Special Defenses:\n      -- '+'\n      -- '.join(self.specialdefense.lstrip().split('|'))
             specialdefense += ui1.UI.INDENT_LEVEL_03 + self.abbrseq + ' Special Defenses:'
             specialdefense += '\n' + ui1.UI.INDENT_LEVEL_04
             specialdefense += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialdefense.lstrip().split('|'))
@@ -406,8 +426,12 @@ class Encounter():
         for combatant in self.combatants:
             if linecount % 3 == 0:
                 message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
+
+            if combatant.charactertype == Combatant.TYPE_MONSTER:
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+            else:
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(21)} {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
                 
-            message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} |  {str(combatant.defensemodifier).rjust(2)}'
             linecount += 1
         
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
@@ -441,6 +465,21 @@ class Encounter():
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
 
+    def get_saving_throw(self, savingthrowclasstype, savingthrowlevel, savingthrowlevelpdm, attacktype):
+        savingthrowvalue = 0
+        for savingthrow in self.savingthrows:
+            if savingthrow.classtype == savingthrowclasstype:
+                if attacktype in Saving_Throw.SAVING_THROW_POISON_DEATH_MAGIC:
+                    if savingthrow.level == savingthrowlevelpdm:
+                        savingthrowvalue = savingthrow.detail[attacktype]
+                        break
+                        
+                if savingthrow.level == savingthrowlevel:
+                    savingthrowvalue = savingthrow.detail[attacktype]
+                    break
+                
+        return savingthrowvalue
+            
     def is_combatant(self, abbrseq) -> bool:
         """check if passed abbrseq key is in the active combatant list"""
         for combatant in self.combatants:
@@ -466,15 +505,16 @@ class Encounter():
                 if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
                     combatant.initiative = saved_initiative
             except:
+                # combatant does not exist
                 pass
 
-        print(self.format_combatants())
-        print(f'\nCombatants loaded: {len(self.combatants)}')
+        ui1.UI.output(self.format_combatants())
+        ui1.UI.output(f'\nCombatants loaded: {len(self.combatants)}')
 
     def load_participants(self) -> None:
         """load participant information"""
         self.data.load_participants()
-        print(f'\nParticipants loaded: {len(self.data.participants)}')
+        ui1.UI.output(f'\nParticipants loaded: {len(self.data.participants)}')
         
     def load_saving_throws(self) -> None:
         """load savings throw information"""
@@ -482,6 +522,7 @@ class Encounter():
         self.data.load_saving_throws()
         savingthrowdata = self.data.savingthrows
         for savingthrow in savingthrowdata:
+            saving_throw_detail = {}
             classtype = savingthrowdata[savingthrow].get("ClassType")
             level = savingthrowdata[savingthrow].get("Level")
             ppdm = savingthrowdata[savingthrow].get("PPDM")
@@ -489,14 +530,14 @@ class Encounter():
             rsw = savingthrowdata[savingthrow].get("RSW")
             bw = savingthrowdata[savingthrow].get("BW")
             s = savingthrowdata[savingthrow].get("S")
-
-            # instatiate new saving throw
+            
+            # instantiate new saving throw
             preparedsavingthrows = Saving_Throw(classtype, level, ppdm, pp, rsw, bw, s)
             
             # append saving throw to saving throw list
             self.savingthrows.append(preparedsavingthrows)
 
-        print(f'\nSaving Throws loaded: {len(self.savingthrows)}')
+        ui1.UI.output(f'\nSaving Throws loaded: {len(self.savingthrows)}')
     
     def prepare_next_encounter(self) -> None:
         """prepare next round for attack"""
@@ -551,20 +592,23 @@ class Encounter():
 #         self.modifier = modifier
 
 class Saving_Throw():
+    SAVING_THROW_TYPE = ['paralyze', 'poison', 'death magic', 'petrify', 'polymorph', 'rod staff wand', 'breath weapon', 'spell']
+    SAVING_THROW_POISON_DEATH_MAGIC = ['poison', 'death magic']
+    
+    #def __init__(self, classtype, level, savingthrowclasstype, savingthrowlevel, savingthrowlevelpdm, ppdm, pp, rsw, bw, s) -> None:
     def __init__(self, classtype, level, ppdm, pp, rsw, bw, s) -> None:
-        self.classtype = classtype
-        self.level     = level
-        self.ppdm      = ppdm
-        self.pp        = pp
-        self.rsw       = rsw
-        self.bw        = bw
-        self.s         = s
+        self.classtype   = classtype
+        self.level       = level
+        self.detail = {}
+        self.detail['paralyze']    = ppdm
+        self.detail['poison']      = ppdm
+        self.detail['death magic'] = ppdm
+        self.detail['petrify'] = pp
+        self.detail['polymorph'] = pp
+        self.detail['rod staff wand'] = rsw
+        self.detail['breath weapon'] = bw
+        self.detail['spell'] = s
 
     def __str__(self):
         message = f'Class: {self.classtype} Level: {self.level}'
-        message +=f'\n- Paralyze/Poison/Death Magic (PPDM): {self.ppdm}'
-        message +=f'\n- Petrify/Polymorph (PP): {self.pp}'
-        message +=f'\n- Rod/Staff/Wand (RSW): {self.rsw}'
-        message +=f'\n- Breath Weapon (BW): {self.bw}'
-        message +=f'\n- Spell (S): {self.s}'
         return message

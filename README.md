@@ -7,4 +7,4 @@ Active combatants and all relevant database information currently stored in Acce
 
 Combat tracking is round-based. Encounters have rounds, and rounds have initiative-ordered attacks consisting of one (1) attacker and one (1) defender.
 
-Spell use occurs during attack with a 0 to-hit roll on d20
+Spell use and attacks vs. multiple opponents occur during attack with a 0 to-hit roll on d20
