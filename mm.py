@@ -95,7 +95,7 @@ class MeleeManager():
             try:
                 action = self.actions_map[action_code]
             except KeyError:
-                ui.output(f'*{action_code}* not a valid action\n')
+                ui1.UI.output(f'*{action_code}* not a valid action\n')
                 continue
 
             try:
@@ -332,6 +332,12 @@ def is_negative_number_digit(n: str) -> bool:
     except ValueError:
         return False
 
+def log_hit_action(ui, encounter, attacker, defender, damage, xp_total, xp_earned, message):
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
+    defender.take_damage(damage)
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
+    encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+
 def process_attack_sequence(ui, encounter) -> bool:
     """process each attack: Return True for additional post-attacks check or False for no post-attack checks"""
     attacker = encounter.find_next_attacker()
@@ -428,7 +434,7 @@ def process_attack_hit(ui, encounter, attacker, defender, to_hit_roll) -> None:
         message += " hit"
         
     damage_raw = ''
-    damage_raw_prompt = f'\n{ui.INDENT_LEVEL_02}Enter {message} damage: '
+    damage_raw_prompt = f'{ui.INDENT_LEVEL_02}Enter {message} damage: '
     while damage_raw == '':
         damage_raw = get_input(ui, damage_raw_prompt)
         if damage_raw.isnumeric():
@@ -437,10 +443,7 @@ def process_attack_hit(ui, encounter, attacker, defender, to_hit_roll) -> None:
             ui.output(f'{ui.INDENT_LEVEL_03}{damage_raw} is not numeric. Try again')
             damage_raw = ''
             
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
-    defender.take_damage(damage)
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
-    encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    log_hit_action(ui, encounter, attacker, defender, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message)
     ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
     return
 
@@ -481,11 +484,70 @@ def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
                     raw_xp = ''
 
     message = encounter.format_attack_type() + " fumbled/cursed damage"
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, damage, 0, penalty_xp, message+' BEFORE')
-    attacker.take_damage(damage)
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, defender.initiative, attacker.hpmax, attacker.hp, 0, 0, 0, message+' AFTER')
-    encounter.data.update_combatant_hit_points(attacker.abbr, attacker.seq, attacker.hpmax, attacker.hp)    # update db with new post-damage hp
+    log_hit_action(ui, encounter, attacker, defender, damage, 0, penalty_xp, message)
     return
+
+def get_opponents(ui, encounter, attacker) -> list:
+    opponents = []
+    special_attack_opponents_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited opponents by abbrseq and/or #group: "
+    special_attack_opponents_raw = ''
+    while len(special_attack_opponents_raw) == 0:
+        special_attack_opponents_raw = get_input(ui, special_attack_opponents_message)
+        if len(special_attack_opponents_raw) == 0:
+            ui.output(f"{ui.INDENT_LEVEL_03}No opponents entered. Try again!")
+            continue
+    
+    special_attack_opponents = []
+    for special_attack_opponent_raw in special_attack_opponents_raw.split(','):
+        special_attack_opponent_raw = special_attack_opponent_raw.strip()
+        
+        # skip if empty value
+        if len(special_attack_opponent_raw) == 0:
+            continue
+        
+        # if special_attack_opponent_raw is not a group
+        if special_attack_opponent_raw[0:1] == '#':
+            special_attack_opponents.append(special_attack_opponent_raw)
+            continue
+        
+        # if special_attack_opponent_raw is in the combatant list
+        if encounter.is_combatant(special_attack_opponent_raw):
+            special_attack_opponents.append(special_attack_opponent_raw)
+            continue
+        
+        # handle missing opponent
+        missing_opponent = ''
+        missing_opponent_message = f"{ui.INDENT_LEVEL_03}Opponent \'{special_attack_opponent_raw}\' is not in the combatant list. Re-enter abbrseq or [Enter] to ignore? "
+        while missing_opponent == '':
+            missing_opponent = get_input(ui, missing_opponent_message).strip()
+            # exclude special_attack_opponent_raw
+            if len(missing_opponent) == 0:
+                break
+            
+            # accept entered group as-is
+            if missing_opponent[0:1] == '#':
+                continue
+            
+            # validate missing_opponent is in combatant list
+            if encounter.is_combatant(missing_opponent) == False:
+                missing_opponent = ''
+                continue
+
+        special_attack_opponents.append(missing_opponent)
+    
+    if len(special_attack_opponents) == 0:
+        return
+    
+    # build opponent group list
+    special_attack_groups = [group[1:] for group in special_attack_opponents if group[0:1] == '#']
+    
+    # append unique group opponents to opponent list
+    [special_attack_opponents.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_opponents)]
+
+    # get opponents (ignoring groups)
+    [opponents.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_opponents]
+    
+    return opponents
 
 def process_attack_special(ui, encounter, attacker, defender) -> None:
     """process special attack (spell, multiple defenders, multiple groups)"""
@@ -498,66 +560,17 @@ def process_attack_special(ui, encounter, attacker, defender) -> None:
     if len(get_input(ui, special_attack_opponents_message)) == 0:
         opponents.append(defender)
     else:
-        special_attack_opponents_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited opponents by abbrseq and/or #group: "
-        special_attack_opponents_raw = ''
-        while len(special_attack_opponents_raw) == 0:
-            special_attack_opponents_raw = get_input(ui, special_attack_opponents_message)
-            if len(special_attack_opponents_raw) == 0:
-                ui.output('{ui.INDENT_LEVEL_01}No opponents entered. Try again!')
-                continue
-        
-        special_attack_opponents = []
-        for special_attack_opponent_raw in special_attack_opponents_raw.split(','):
-            special_attack_opponent_raw = special_attack_opponent_raw.strip()
+        # build multiple opponent list (can include FRIEND and FOE!!!)
+        opponent_list_verified = False
+        while opponent_list_verified == False:
+            opponents = get_opponents(ui, encounter, attacker)
+            opponent_list = [opponent.abbrseq for opponent in opponents]
+            opponent_list_prompt = f"{ui.INDENT_LEVEL_03}Opponent list:"
+            opponent_list_prompt += f"\n{ui.INDENT_LEVEL_04}{('\n'+ui.INDENT_LEVEL_04).join(opponent_list)}"
+            opponent_list_prompt += f"\n{ui.INDENT_LEVEL_03}Is this opponent list correct? ([Enter = Yes, N = No]) "
+            if len(ui.get_input(opponent_list_prompt)) == 0:
+                opponent_list_verified = True
             
-            # skip if empty value
-            if len(special_attack_opponent_raw) == 0:
-                continue
-            
-            # if special_attack_opponent_raw is not a group
-            if special_attack_opponent_raw[0:1] == '#':
-                special_attack_opponents.append(special_attack_opponent_raw)
-                continue
-            
-            # if special_attack_opponent_raw is in the combatant list
-            if encounter.is_combatant(special_attack_opponent_raw):
-                special_attack_opponents.append(special_attack_opponent_raw)
-                continue
-            
-            # handle missing opponent
-            missing_opponent = ''
-            missing_opponent_message = f"{ui.INDENT_LEVEL_03}Opponent \'{special_attack_opponent_raw}\' is not in the combatant list. Re-enter abbrseq or [Enter] to ignore? "
-            while missing_opponent == '':
-                missing_opponent = get_input(ui, missing_opponent_message).strip()
-                # exclude special_attack_opponent_raw
-                if len(missing_opponent) == 0:
-                    break
-                
-                # accept entered group as-is
-                if missing_opponent[0:1] == '#':
-                    continue
-                
-                # validate missing_opponent is in combatant list
-                if encounter.is_combatant(missing_opponent) == False:
-                    missing_opponent = ''
-                    continue
-
-            special_attack_opponents.append(missing_opponent)
-            
-        # exit if no special_attack_opponents after validation
-        if len(special_attack_opponents) == 0:
-            return
-        
-        # build opponent group list
-        special_attack_groups = [group[1:] for group in special_attack_opponents if group[0:1] == '#']
-        
-        # append unique group opponents to opponent list
-        [special_attack_opponents.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_opponents)]
-
-        # get opponents (ignoring groups)
-        [opponents.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_opponents]
-
-        # exit if no opponents after validation
         if len(opponents) == 0:
             return
 
@@ -591,7 +604,7 @@ def process_attack_special(ui, encounter, attacker, defender) -> None:
     is_damage_variable = True
     if len(opponent_list) > 1:
         # for multiple opponents, check for variable damage by opponent
-        if len(get_input(ui, f"{ui.INDENT_LEVEL_04}Enter damage for each opponent? [Enter = No, Y = Yes] ")) == 0:
+        if len(get_input(ui, f"{ui.INDENT_LEVEL_02}Enter damage for each opponent? [Enter = No, Y = Yes] ")) == 0:
             is_damage_variable = False
 
     # process individual special attack vs. opponent
@@ -634,20 +647,17 @@ def process_attack_special(ui, encounter, attacker, defender) -> None:
 
         damage = int(damage_base * saving_throw_modifier)
 
-        if (saving_throw_permitted) and (damage > 0):
+        output_message = '~~'
+        if (saving_throw_permitted):
             if saving_throw_modifier == 0:
                 output_message = f"Saving throw made (rolled {saving_throw_value} needed {saving_throw})"
                 message += f" (Save GOOD: {saving_throw_value} >= {saving_throw})"
             elif saving_throw_modifier == 1.0:
-                output_message = f"Saving throw failed (rolled {saving_throw_value} needed {saving_throw} | full damage {damage} taken)"
-                message += f" (Save FAIL: {saving_throw_value} > {saving_throw}) Full damage: {damage}"
+                output_message = f"Saving throw failed (rolled {saving_throw_value} needed {saving_throw}) Full damage {damage}"
+                message += f" (Save FAIL: {saving_throw_value} > {saving_throw}) Full damage taken"
             else:
-                output_message = f"Saving throw made (rolled {saving_throw_value} needed {saving_throw} | half damage {damage} taken)"
-                message += f" (Save GOOD: {saving_throw_value} >= {saving_throw}) Half damage: {damage}"
-
-            ui.output(ui.INDENT_LEVEL_04+output_message)
-            
-        ui.output(ui.INDENT_LEVEL_04+f'{opponent.hp} hit points remaining')
+                output_message = f"Saving throw made (rolled {saving_throw_value} needed {saving_throw}) Half damage {damage}"
+                message += f" (Save GOOD: {saving_throw_value} >= {saving_throw}) Half damage taken"
 
         if attacker.combattype == encounter.COMBATTYPE_FRIEND and opponent.combattype == encounter.COMBATTYPE_FRIEND:
             # Attacker is performing special attack on opponent friend (typically healing)
@@ -658,11 +668,9 @@ def process_attack_special(ui, encounter, attacker, defender) -> None:
             earned_xp_base = encounter.calculate_earned_xp(opponent.hpmax, opponent.hp, damage, opponent.xp)
         
         earned_xp = int(earned_xp_base * saving_throw_modifier)
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, opponent.combattype, opponent.abbr, opponent.seq, opponent.group, opponent.initiative, opponent.hpmax, opponent.hp, damage, opponent.xp, earned_xp, message+' BEFORE')
-        opponent.take_damage(damage)
-        encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, opponent.combattype, opponent.abbr, opponent.seq, opponent.group, opponent.initiative, opponent.hpmax, opponent.hp, 0, 0, 0, message+' AFTER')
-        encounter.data.update_combatant_hit_points(opponent.abbr, opponent.seq, opponent.hpmax, opponent.hp)    # update db with new post-damage hp
-    
+        log_hit_action(ui, encounter, attacker, defender, damage, opponent.xp, earned_xp, message)
+        ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', 'Damage: '+str(damage))+f' Hit points remaining: {opponent.hp}')
+
     return
 
 def process_combatant_initiative(ui, encounter) -> bool:

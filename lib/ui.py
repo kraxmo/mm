@@ -6,7 +6,7 @@ class UI:
     INDENT_LEVEL_04 = '      -- '
     
     @classmethod
-    def get_input(self, action_prompt, response_option = "", response_exception = Exception):
+    def get_input(self, action_prompt, response_option = "~@~", response_exception = Exception):
         value = input(action_prompt)
         
         # If response_option specified, raise response error
@@ -16,7 +16,7 @@ class UI:
         return value.upper()    # force uppercase values
     
     @classmethod
-    def get_numeric_input(self, action_prompt, response_prefix = "", response_option = "", response_exception = Exception):
+    def get_numeric_input(self, action_prompt, response_prefix = "", response_option = "~@~", response_exception = Exception):
         while True:
             try:
                 value = self.get_input(action_prompt, response_option, response_exception)
