@@ -29,53 +29,34 @@ class TestCombatModel(TestCase):
         self.data_cursor.execute(sql)
         self.data_cursor.commit()
 
+        # define test combatants
         combatants = [
-            {'CombatType': 'FOE', 'Abbr': 'AAA_DM', 'seq': '99', 'group': 'D9', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
-            {'CombatType': 'FOE', 'Abbr': 'ANTG', 'seq': '99', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
-            {'CombatType': 'FOE', 'Abbr': 'ANTG', 'seq': '100', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
-            {'CombatType': 'FOE', 'Abbr': 'ANTG', 'seq': '101', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'AAA_DM',  'seq':  '99', 'group': 'D9', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'ANTG',    'seq':  '99', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'ANTG',    'seq': '100', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'ANTG',    'seq': '101', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'APEC',    'seq':  '99', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FOE',    'Abbr': 'DRREDAD', 'seq':  '99', 'group': 'O1', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FRIEND', 'Abbr': 'ALIEL',   'seq':  '99', 'group': 'A0', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FRIEND', 'Abbr': 'DORAN',   'seq':  '99', 'group': 'A0', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FRIEND', 'Abbr': 'ERIC',    'seq':  '99', 'group': 'A0', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
+            {'CombatType': 'FRIEND', 'Abbr': 'THAB',    'seq':  '99', 'group': 'A0', 'hpmax': '0', 'hp': '0', 'attackmodifier': '0', 'defensemodifier': '0'},
         ]
 
-        # add all test Combatants
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'AAA_DM', 99, 'D9', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-        
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'ANTG', 99, 'O1', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-        
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'ANTG', 100, 'O1', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'ANTG', 101, 'O1', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'APEC', 99, 'O1', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FOE', 'DRREDAD', 99, 'O1', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FRIEND', 'ALIEL', 99, 'A0', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FRIEND', 'DORAN', 99, 'A0', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FRIEND', 'ERIC', 99, 'A0', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
-        
-        sql = "insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) values ('FRIEND', 'THAB', 99, 'A0', 0, 0, 0, 0)"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
+        # add test combatants to database
+        for combatant in combatants:
+            combattype = combatant['CombatType']
+            abbr = combatant['Abbr']
+            seq = combatant['seq']
+            group = combatant['group']
+            hpmax = combatant['hpmax']
+            hp = combatant['hp']
+            attackmodifier = combatant['attackmodifier']
+            defensemodifier = combatant['defensemodifier']
+            sql = f"insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) "
+            sql += f"values ('{combattype}', '{abbr}', {int(seq)}, '{group}', {int(hpmax)}, {int(hp)}, {int(attackmodifier)}, {int(defensemodifier)})"
+            self.data_cursor.execute(sql)
+            self.data_cursor.commit()
 
     @classmethod
     def tearDownClass(self):
