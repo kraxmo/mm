@@ -256,7 +256,7 @@ class Combatant():
     
     def is_spellcaster(self) -> bool:
         """check if combatant could be a spell caster"""
-        for classtype in self.ClassType.split(","):
+        for classtype in self.ClassType.split(','):
             if classtype in self.CLASSTYPE_SPELLCASTER:
                 return True
             
@@ -299,7 +299,7 @@ class Encounter():
     INITIATIVE_INACTIVE_MINIMUM  = 0
     INITIATIVE_INACTIVE_MAXIMUM  = 999
     INITIATIVE_ACTIVE_MINIMUM    = 1000
-    INITIATIVE_ACTIVE_MAXIMUM    = 6999
+    INITIATIVE_ACTIVE_MAXIMUM    = 7000
     INITIATIVE_NONE              = -1
     INITIATIVE_MINIMUM           = INITIATIVE_INACTIVE_MINIMUM
     INITIATIVE_MAXIMUM           = INITIATIVE_ACTIVE_MAXIMUM
@@ -321,13 +321,12 @@ class Encounter():
     combatants = []
 
     def __init__(self) -> None:
-        self.data = cd1.CombatData()
-        self.load_saving_throws()
-    
         self.encounter = 1
         self.round = 1
         self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM
         self.ismissileattack = True
+        self.data = cd1.CombatData()
+        self.load_saving_throws()
 
     def calculate_earned_xp(self, originalhp, hp, damage, xp) -> int:
         """calculate experience points earned based upon total hit points and damage inflicted"""
@@ -362,6 +361,9 @@ class Encounter():
         """count number of available combatants"""
         combatant_count = 0
         for combatant in self.combatants:
+            if combatant.abbr == "AAA_DM":
+                continue
+            
             if combatant.combattype == combattype:
                 if combatant.combattype == self.COMBATTYPE_FRIEND:
                     if combatant.can_attack():
@@ -439,9 +441,9 @@ class Encounter():
                 message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
 
             if combatant.charactertype == Combatant.TYPE_MONSTER:
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
             else:
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(21)} {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |   {str(combatant.thac0).rjust(2)}  | {str(combatant.ac).rjust(2)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(21)} {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
                 
             linecount += 1
         
@@ -533,7 +535,6 @@ class Encounter():
         self.data.load_saving_throws()
         savingthrowdata = self.data.savingthrows
         for savingthrow in savingthrowdata:
-            saving_throw_detail = {}
             classtype = savingthrowdata[savingthrow].get("ClassType")
             level = savingthrowdata[savingthrow].get("Level")
             ppdm = savingthrowdata[savingthrow].get("PPDM")
@@ -606,7 +607,6 @@ class Saving_Throw():
     SAVING_THROW_TYPE = ['paralyze', 'poison', 'death magic', 'petrify', 'polymorph', 'rod staff wand', 'breath weapon', 'spell']
     SAVING_THROW_POISON_DEATH_MAGIC = ['poison', 'death magic']
     
-    #def __init__(self, classtype, level, savingthrowclasstype, savingthrowlevel, savingthrowlevelpdm, ppdm, pp, rsw, bw, s) -> None:
     def __init__(self, classtype, level, ppdm, pp, rsw, bw, s) -> None:
         self.classtype   = classtype
         self.level       = level

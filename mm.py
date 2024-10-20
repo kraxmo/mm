@@ -1,6 +1,7 @@
 #mm.py
 
 import abc
+import lib.combatdata as cd1
 import lib.combatmodel as cm1
 from lib.dice import Dice
 import lib.ui as ui1
@@ -259,6 +260,10 @@ def get_all_combatants_initiative(ui, encounter) -> None:
 
     ui.output('\nEnter Initiative:')            
     for combatant in encounter.combatants:
+        if combatant.abbr == 'AAA_DM':
+            combatant.initiative = 7000
+            continue
+
         if combatant.CharacterType == combatant.TYPE_PLAYER_CHARACTER:
             get_combatant_initiative(ui, encounter, combatant)
         else:
@@ -378,7 +383,7 @@ def get_opponents(ui, encounter, attacker) -> list:
 
 def get_to_hit_roll(ui, encounter, combatant) -> int:
     """get to-hit roll value"""
-    message = f"\n{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
+    message = f"{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: "
     if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
         message += f"({encounter.TO_HIT_DIE_SPECIAL_ATTACK} = special attack, {encounter.TO_HIT_DIE_MINIMUM}-{encounter.TO_HIT_DIE_MAXIMUM} manual entry) "
     else:
@@ -402,7 +407,7 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
             to_hit_input = ''
             continue
     
-    ui.output(f'\n{ui.INDENT_LEVEL_02}Rolled {to_hit_roll}')    
+    ui.output(f'{ui.INDENT_LEVEL_02}ROLLED {to_hit_roll}')    
     return to_hit_roll
     
 def initialize_round(ui, encounter) -> None:
@@ -428,7 +433,7 @@ def is_negative_number_digit(n: str) -> bool:
         return False
 
 def log_hit_action(ui, encounter, attacker, defender, damage, xp_total, xp_earned, message):
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message+' BEFORE')
+    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, xp_total, xp_earned, message+' BEFORE')
     defender.take_damage(damage)
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
     encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
@@ -504,7 +509,7 @@ def process_attack_sequence(ui, encounter) -> bool:
         encounter.foe_count -= 1
         attacker.defender_abbrseq = ''
 
-    attack_prompt = f'\n{ui.INDENT_LEVEL_02}Attack again? (<Enter> = No, y = Yes) '
+    attack_prompt = f'{ui.INDENT_LEVEL_02}Attack again? (<Enter> = No, y = Yes) '
     attack_again = get_input(ui, attack_prompt)
     if len(attack_again) == 0:
         process_attack_end(ui, encounter)
@@ -559,7 +564,7 @@ def process_attack_miss(ui, encounter, attacker, defender, to_hit_roll) -> None:
     damage_raw = ''
     penalty_xp = 0
     while damage_raw == '':
-        damage_raw_prompt = f'\n{ui.INDENT_LEVEL_02}Enter {attacker.abbr}{attacker.seq} self damage: '
+        damage_raw_prompt = f'{ui.INDENT_LEVEL_02}Enter {attacker.abbr}{attacker.seq} self damage: '
         damage_raw = get_input(ui, damage_raw_prompt)
         if damage_raw.isnumeric():
             damage = int(damage_raw)
