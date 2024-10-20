@@ -1,5 +1,5 @@
 class UI:
-    SEPARATOR_LINE_LENGTH = 97
+    SEPARATOR_LINE_LENGTH = 103
     INDENT_LEVEL_01 = '- '
     INDENT_LEVEL_02 = '  + '
     INDENT_LEVEL_03 = '    * '

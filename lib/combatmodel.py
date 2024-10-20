@@ -157,8 +157,8 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            damage += ui1.UI.INDENT_LEVEL_03 + 'Damage Per Attack:'
-            damage += '\n' + ui1.UI.INDENT_LEVEL_04
+            damage += f"\n{ui1.UI.INDENT_LEVEL_03}Damage Per Attack:"
+            damage += f"\n{ui1.UI.INDENT_LEVEL_04}"
             damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
         
         return damage
@@ -428,22 +428,23 @@ class Encounter():
 
     def format_combatants(self) -> str:
         """format combatant information"""
-        SEPARATOR_LINE_LENGTH = 97
+        SEPARATOR_LINE_LENGTH = 103
+        SIZE = {"S": "SMALL", "M": "MEDIUM", "L": "LARGE"}
         
         """format all combatant information"""
         message = '\nCombatants:'
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
-        message += f'\n       |                                         |      |       |       |    |        | ATT | DEF'
-        message += f'\n TYPE  | ABBRSEQ  NAME                           | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
+        message += f'\n       |                                 |    SIZE     |      |       |       |    |        | ATT | DEF'
+        message += f'\n TYPE  | ABBRSEQ  NAME                   | RAC:CLS-LVL | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
         linecount = 0
         for combatant in self.combatants:
             if linecount % 3 == 0:
-                message += f'\n------ | -------- ------------------------------ | ---- | ----- | ----- | -- | ------ | --- | ---'
+                message += f'\n------ | -------- ---------------------- | ----------- | ---- | ----- | ----- | -- | ------ | --- | ---'
 
             if combatant.charactertype == Combatant.TYPE_MONSTER:
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(30)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |    {SIZE[combatant.size].ljust(6)}   | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
             else:
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(21)} {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)} | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |   {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)}  | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
                 
             linecount += 1
         
