@@ -145,6 +145,17 @@ class Combatant():
         """check if combatant can attack"""
         return self.hp > 0
 
+    def format_charactertype(self) -> str:
+        """format class information"""
+        if self.charactertype == self.TYPE_PLAYER_CHARACTER:
+            charactertype = "Player Character"
+        elif self.charactertype == self.TYPE_NON_PLAYER_CHARACTER:
+            charactertype = "Non-Player Character"
+        else:
+            charactertype = "Monster"
+
+        return charactertype
+
     def format_classtype(self) -> str:
         """format class information"""
         classnames = [self.CLASSTYPE.get(name) for name in self.classtype.split(',')]
@@ -311,8 +322,6 @@ class Encounter():
     TO_HIT_DIE                   = 20
     TO_HIT_DIE_MINIMUM           = 1
     TO_HIT_DIE_MAXIMUM           = 30
-    # TO_HIT_DIE_MINIMUM           = 0
-    # TO_HIT_DIE_SPECIAL_ATTACK    = 0
 
     ATTACK_CRITICAL_FUMBLE       = 1
     ATTACK_CRITICAL_HIT          = 20
