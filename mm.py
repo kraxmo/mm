@@ -279,7 +279,7 @@ def get_all_combatants_initiative(ui, encounter) -> None:
             
             # auto-roll new initiative
             combatant.initiative = encounter.roll_nonplayer_initiative()
-            ui.output(f"{ui.INDENT_LEVEL_02}Initiative set to {combatant.initiative}")
+            ui.output(f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative set to {combatant.initiative}")
 
     encounter.check_duplicate_initiative()
     for combatant in encounter.combatants:
@@ -599,6 +599,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
     # process saving throw
     saving_throw_permitted = False
     saving_throw_half_damage = False
+    saving_throw_type = 0
     if len(get_input(ui, f"{ui.INDENT_LEVEL_03}Is saving throw allowed? ([Enter] for Yes, N for No) ")) == 0:
         saving_throw_permitted = True
         if len(get_input(ui, f"{ui.INDENT_LEVEL_03}If save successful, defender takes no damage or 50% damage? ([Enter] = None, Y = 50%) ")) > 0:
@@ -610,17 +611,12 @@ def process_attack_special(ui, encounter, attacker) -> None:
             saving_throw_types += f'{ui.INDENT_LEVEL_04}{str(index)}: {saving_throw_type}\n'
         
         ui.output(saving_throw_types)
-        saving_throw_type = 0
         while saving_throw_type == 0:
             saving_throw_type_raw = get_numeric_input(ui, f'{ui.INDENT_LEVEL_03}Select saving throw type: ', ui.INDENT_LEVEL_04)
             ui.output('\n')
             if (saving_throw_type_raw > 0) and (saving_throw_type_raw <= len(cm1.Saving_Throw.SAVING_THROW_TYPE)):
                 saving_throw_type = saving_throw_type_raw - 1
                 break
-
-    # list defenders
-    defender_list = [defender.abbrseq for defender in defenders]
-    ui.output(f"{ui.INDENT_LEVEL_03}Defender List: {', '.join(defender_list)}")
 
     is_damage_variable = True
     if len(defender_list) > 1:
@@ -630,7 +626,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
 
     # process special attack vs. defenders
     for index, defender in enumerate(defenders, 1):
-        ui.output(f"{ui.INDENT_LEVEL_02}defender: {defender.abbrseq}")
+        ui.output(f"{ui.INDENT_LEVEL_02}Defender: {defender.abbrseq}")
         saving_throw_modifier = 1.0
         if saving_throw_permitted == True:
             saving_throw = encounter.get_saving_throw(defender.savingthrowclasstype, defender.savingthrowlevel, defender.savingthrowlevelpdm, cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type])
@@ -656,15 +652,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
         
         # enter damage if it varies for defender or if first defender (does not vary)
         if (is_damage_variable == True) or (index == 1):
-            damage_base_raw = ''
-            while damage_base_raw == '':
-                damage_base_raw = get_input(ui, f"{ui.INDENT_LEVEL_03}Enter special attack damage (+/-number): ")
-                if is_negative_number_digit(damage_base_raw):
-                    damage_base = int(damage_base_raw)
-                else:
-                    ui.output(f'{ui.INDENT_LEVEL_04}{damage_base_raw} is not numeric. Try again')
-                    ui.output('\n')
-                    damage_base_raw = ''
+            damage_base = ui.get_numeric_input(f"{ui.INDENT_LEVEL_03}Enter special attack damage (+/-number): ")
 
         damage = int(damage_base * saving_throw_modifier)
 
@@ -682,7 +670,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
 
         if attacker.combattype == encounter.COMBATTYPE_FRIEND and defender.combattype == encounter.COMBATTYPE_FRIEND:
             # Attacker is performing special attack on defender friend (typically healing)
-            xp_prompt = f'{ui.INDENT_LEVEL_03}Enter {defender.abbrseq} xp for {cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type]}: '
+            xp_prompt = f'{ui.INDENT_LEVEL_03}Enter {attacker.abbrseq} xp: '
             earned_xp_base = get_numeric_input(ui, xp_prompt)
         else:
             # Calculate xp

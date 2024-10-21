@@ -82,8 +82,11 @@ class Combatant():
             self.hp = self.calculate_hitpoints( self.HitDiceTypeCode, self.HitDie, self.HitDice, self.HitDiceMin, self.HitDiceMax, self.HitDiceModifier, self.HitDieValue, self.HitPointStart, self.HitPointMin, self.HitPointMax )
         else:
             self.hp = hp
-            
-        self.hpmax = self.hp
+        
+        if self.HitPointStart == 0:    
+            self.hpmax = self.hp
+        else:
+            self.hpmax = self.HitPointStart
         
         self.xp = self.ExperienceBase + self.ExperienceAdjustment + (self.hp * self.ExperienceHitPointMultiplier)
         if self.ExperienceAddHitPoint == True:
@@ -359,18 +362,20 @@ class Encounter():
 
         # Detect duplicate initiative and esequence
         initiative = set()
-        duplicates_exist = False
+        #duplicates_exist = False
         for i in range(len(self.combatants)):
             while self.combatants[i].initiative in initiative:
                 self.combatants[i].initiative += 1
-                if duplicates_exist == False:
-                    duplicates_exist = True
+                # if duplicates_exist == False:
+                #     duplicates_exist = True
                 
             initiative.add(self.combatants[i].initiative)
 
-        if duplicates_exist:
-            # re-sort combatants by initiative
-            self.sort_combatants_by_initative()
+        # if duplicates_exist:
+        #     # re-sort combatants by initiative
+        #     self.sort_combatants_by_initative()
+        
+        self.sort_combatants_by_initative()
             
     def count_combatants(self, combattype) -> int:
         """count number of available combatants"""
