@@ -157,9 +157,10 @@ class Combatant():
         if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
             pass
         else:
-            damage += f"\n{ui1.UI.INDENT_LEVEL_03}Damage Per Attack:"
+            damage += f"{ui1.UI.INDENT_LEVEL_03}Damage Per Attack:"
             damage += f"\n{ui1.UI.INDENT_LEVEL_04}"
             damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
+            damage += '\n'
         
         return damage
 
@@ -172,6 +173,7 @@ class Combatant():
             notes += ui1.UI.INDENT_LEVEL_03 + 'Notes:'
             notes += '\n' + ui1.UI.INDENT_LEVEL_04
             notes += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.notes.lstrip().split('|'))
+            notes += '\n'
 
         return notes
 
@@ -179,6 +181,7 @@ class Combatant():
         """format special attack information"""
         savingthrow = f'{ui1.UI.INDENT_LEVEL_03} Saving Throw:'
         savingthrow += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
+        savingthrow += '\n'
 
         return savingthrow
 
@@ -191,6 +194,7 @@ class Combatant():
             specialattack += ui1.UI.INDENT_LEVEL_03 + 'Special Attacks:'
             specialattack += '\n' + ui1.UI.INDENT_LEVEL_04
             specialattack += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
+            specialattack += '\n'
 
         return specialattack+self.format_damage_per_attack()
 
@@ -203,6 +207,7 @@ class Combatant():
             specialdefense += ui1.UI.INDENT_LEVEL_03 + 'Special Defenses:'
             specialdefense += '\n' + ui1.UI.INDENT_LEVEL_04
             specialdefense += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialdefense.lstrip().split('|'))
+            specialdefense += '\n'
 
         return specialdefense
 
@@ -304,9 +309,10 @@ class Encounter():
     INITIATIVE_MINIMUM           = INITIATIVE_INACTIVE_MINIMUM
     INITIATIVE_MAXIMUM           = INITIATIVE_ACTIVE_MAXIMUM
     TO_HIT_DIE                   = 20
+    TO_HIT_DIE_MINIMUM           = 1
     TO_HIT_DIE_MAXIMUM           = 30
-    TO_HIT_DIE_MINIMUM           = 0
-    TO_HIT_DIE_SPECIAL_ATTACK    = 0
+    # TO_HIT_DIE_MINIMUM           = 0
+    # TO_HIT_DIE_SPECIAL_ATTACK    = 0
 
     ATTACK_CRITICAL_FUMBLE       = 1
     ATTACK_CRITICAL_HIT          = 20
