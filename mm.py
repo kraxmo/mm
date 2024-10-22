@@ -260,8 +260,8 @@ def get_all_combatants_initiative(ui, encounter) -> None:
 
     ui.output('\nEnter Initiative:')            
     for combatant in encounter.combatants:
-        if combatant.abbr == 'AAA_DM':
-            combatant.initiative = 7000
+        if combatant.abbr == combatant.DUNGEON_MASTER:
+            combatant.initiative = encounter.INITIATIVE_ACTIVE_MAXIMUM
             continue
 
         if combatant.CharacterType == combatant.TYPE_PLAYER_CHARACTER:

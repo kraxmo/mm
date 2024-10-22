@@ -10,7 +10,9 @@ class Combatant():
     TYPE_PLAYER_CHARACTER = 'PC'
     TYPE_NON_PLAYER_CHARACTER = 'NPC'
     TYPE_MONSTER = 'M'
-
+    
+    DUNGEON_MASTER = "AAA_DM"
+    
     CLASSTYPE = {
             "MO": "MONSTER",
             "CL":  "CLERIC",
@@ -381,7 +383,7 @@ class Encounter():
         """count number of available combatants"""
         combatant_count = 0
         for combatant in self.combatants:
-            if combatant.abbr == "AAA_DM":
+            if combatant.abbr == Combatant.DUNGEON_MASTER:
                 continue
             
             if combatant.combattype == combattype:
