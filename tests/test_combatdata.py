@@ -8,7 +8,7 @@ from unittest import(
     TestCase,
 )
 
-class TestCombatModel(TestCase):
+class TestCombatData(TestCase):
     @classmethod
     def setUpClass(self):
         self.data = CombatData()
@@ -96,7 +96,7 @@ class TestCombatModel(TestCase):
         bignumber = 9999999
         self.data.log_action(bignumber, bignumber, 'TEST', 'ALIEL', 99, 'TEST', bignumber, bignumber, 'TEST', 'TEST', bignumber, 'TEST', bignumber, bignumber, bignumber, bignumber, bignumber, bignumber, 'TEST LOG ACTION')
 
-    def test_log_action(self):
+    def test_log_initiative(self):
         bignumber = 9999999
         self.data.log_initiative(bignumber, bignumber, 'TEST', 'ALIEL', 99, 'TEST', bignumber)
     

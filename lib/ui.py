@@ -23,6 +23,7 @@ class UI:
                 return int(value)
             except ValueError:
                 print(f"{response_prefix}Entered value must be numeric")
+                continue
 
     @classmethod
     def output_separator_line(self, value, newlinebefore = False):

@@ -631,17 +631,17 @@ class Saving_Throw():
     SAVING_THROW_POISON_DEATH_MAGIC = ['poison', 'death magic']
     
     def __init__(self, classtype, level, ppdm, pp, rsw, bw, s) -> None:
-        self.classtype   = classtype
-        self.level       = level
-        self.detail = {}
-        self.detail['paralyze']    = ppdm
-        self.detail['poison']      = ppdm
-        self.detail['death magic'] = ppdm
-        self.detail['petrify'] = pp
-        self.detail['polymorph'] = pp
+        self.classtype                = classtype
+        self.level                    = level
+        self.detail                   = {}
+        self.detail['paralyze']       = ppdm
+        self.detail['poison']         = ppdm
+        self.detail['death magic']    = ppdm
+        self.detail['petrify']        = pp
+        self.detail['polymorph']      = pp
         self.detail['rod staff wand'] = rsw
-        self.detail['breath weapon'] = bw
-        self.detail['spell'] = s
+        self.detail['breath weapon']  = bw
+        self.detail['spell']          = s
 
     def __str__(self):
         message = f'Class: {self.classtype} Level: {self.level}'

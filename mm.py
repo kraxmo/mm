@@ -256,6 +256,7 @@ def get_all_combatants_initiative(ui, encounter) -> None:
     """get initiative for all combatants"""
     if encounter.round > 1:
         if len(get_input(ui, f'{ui.INDENT_LEVEL_01}Re-roll initiative? (<Enter> for No, Y for Yes) ')) == 0:
+            encounter.sort_combatants_by_initative()
             return
 
     ui.output('\nEnter Initiative:')            
@@ -607,13 +608,12 @@ def process_attack_special(ui, encounter, attacker) -> None:
         
         ui.output(f'{ui.INDENT_LEVEL_03}Saving Throw Types:')
         saving_throw_types = ''
-        for index, saving_throw_type in enumerate(cm1.Saving_Throw.SAVING_THROW_TYPE, 1):
-            saving_throw_types += f'{ui.INDENT_LEVEL_04}{str(index)}: {saving_throw_type}\n'
+        for index, type in enumerate(cm1.Saving_Throw.SAVING_THROW_TYPE, 1):
+            saving_throw_types += f'{ui.INDENT_LEVEL_04}{str(index)}: {type}\n'
         
         ui.output(saving_throw_types)
         while saving_throw_type == 0:
             saving_throw_type_raw = get_numeric_input(ui, f'{ui.INDENT_LEVEL_03}Select saving throw type: ', ui.INDENT_LEVEL_04)
-            ui.output('\n')
             if (saving_throw_type_raw > 0) and (saving_throw_type_raw <= len(cm1.Saving_Throw.SAVING_THROW_TYPE)):
                 saving_throw_type = saving_throw_type_raw - 1
                 break
@@ -634,7 +634,6 @@ def process_attack_special(ui, encounter, attacker) -> None:
                 saving_throw_value = 0
                 while saving_throw_value == 0:
                     saving_throw_value_raw = get_numeric_input(ui, f"{ui.INDENT_LEVEL_03}Enter {defender.abbrseq}'s save vs. {cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type]}: ({saving_throw} needed) ", ui.INDENT_LEVEL_04)
-                    ui.output('\n')
                     if (saving_throw_value_raw > 0) and (saving_throw_value_raw <= encounter.TO_HIT_DIE):
                         saving_throw_value = saving_throw_value_raw
                         break
@@ -678,7 +677,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
         
         earned_xp = int(earned_xp_base * saving_throw_modifier)
         log_hit_action(ui, encounter, attacker, defender, damage, defender.xp, earned_xp, message)
-        ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', 'Damage: '+str(damage))+f' Hit points remaining: {defender.hp}\n')
+        ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', str(damage))+f' points damage ({defender.hp} remaining)\n')
 
     return
 
