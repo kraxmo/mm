@@ -12,7 +12,7 @@ from lib.sqldb import SQLDB
 class SQLDB_Access(SQLDB):
     """A class to represent a class of sqldb for Microsoft Access"""
     
-    def __init__(self, databasename):
+    def __init__(self, databasename: str):
         """Initialize the access database connector"""
         super().__init__(databasename)
         self.__connection_string = r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ='+self.databasename

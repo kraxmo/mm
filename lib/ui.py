@@ -1,3 +1,5 @@
+#ui.py
+
 class UI:
     SEPARATOR_LINE_LENGTH = 103
     INDENT_LEVEL_01 = '- '
@@ -6,8 +8,14 @@ class UI:
     INDENT_LEVEL_04 = '      -- '
     
     @classmethod
-    def get_input(self, action_prompt, response_option = "~@~", response_exception = Exception):
-        value = input(action_prompt)
+    def get_input(self, action_prompt: str, response_option: str = None, response_exception: Exception = None):
+        if response_option is None:
+            response_option = "~@~"
+            
+        if response_exception is None:
+            response_exception = Exception
+            
+        value: str = input(action_prompt)
         
         # If response_option specified, raise response error
         if value.find(response_option) > -1:
@@ -16,18 +24,18 @@ class UI:
         return value.upper()    # force uppercase values
     
     @classmethod
-    def get_numeric_input(self, action_prompt, response_prefix = "", response_option = "~@~", response_exception = Exception):
+    def get_numeric_input(self, action_prompt: str, response_prefix: str = "", response_option: str = "~@~", response_exception: Exception = Exception):
         while True:
             try:
-                value = self.get_input(action_prompt, response_option, response_exception)
+                value: str = self.get_input(action_prompt, response_option, response_exception)
                 return int(value)
             except ValueError:
                 print(f"{response_prefix}Entered value must be numeric")
                 continue
 
     @classmethod
-    def output_separator_line(self, value, newlinebefore = False):
-        newline = ''
+    def output_separator_line(self, value: str, newlinebefore: bool = False):
+        newline: str = ''
         if newlinebefore == True:
             newline = '\n'
             

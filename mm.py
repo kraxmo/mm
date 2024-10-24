@@ -1,7 +1,6 @@
 #mm.py
 
 import abc
-import lib.combatdata as cd1
 import lib.combatmodel as cm1
 from lib.dice import Dice
 import lib.ui as ui1
@@ -565,13 +564,6 @@ def process_attack_regular(ui, encounter, attacker) -> None:
             raw_xp = ''
             while raw_xp == '':
                 penalty_xp = get_numeric_input(ui, '{ui.INDENT_LEVEL_03}Enter penalty xp (-number): ')
-                # raw_xp = get_input(ui, '{ui.INDENT_LEVEL_03}Enter penalty xp (-number): ')
-                # if is_negative_number_digit(raw_xp):
-                #     penalty_xp = int(raw_xp)
-                # else:
-                #     ui.output(f'{ui.INDENT_LEVEL_04}{raw_xp} is not numeric. Try again')
-                #     ui.output('\n')
-                #     raw_xp = ''
 
     message = encounter.format_attack_type() + " fumbled/cursed damage"
     log_hit_action(ui, encounter, attacker, defender, damage, 0, penalty_xp, message)

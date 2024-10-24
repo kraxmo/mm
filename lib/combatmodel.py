@@ -42,63 +42,78 @@ class Combatant():
         "HU": "HUMAN",
     }
     
-    def __init__(self, combattype, group, seq, hp, initiative = 0, damage = 0, attackmodifier = 0, defensemodifier = 0, **kwargs):
+    def __init__(self, combattype: str, group: str, seq: int, hp: int, initiative: int = None, damage: int = None, attackmodifier: int = None, defensemodifier: int = None, **kwargs):
         # Load all raw participant values
         self.load_participant_values(**kwargs)
         
         # Assign member variables to database-retrieved values
-        self.abbr = self.Abbr
-        self.name = self.Name
-        self.charactertype = self.CharacterType
-        self.racetype = self.RaceType
-        self.classtype = self.ClassType
-        self.level = self.Level
-        self.savingthrowclasstype = self.SavingThrowClassType
-        self.savingthrowlevel = self.SavingThrowLevel
-        self.savingthrowlevelpdm = self.SavingThrowLevelPDM
-        self.size = self.Size
-        self.attacksperround = self.AttacksPerRound
-        self.ac = self.AC
-        self.thac0 = self.THAC0
-        self.defensiveadjustment = self.DefensiveAdjustment
-        self.missileattack = self.MissileAttack
-        self.damageperattack = self.DamagePerAttack
-        self.specialattack = self.SpecialAttack
-        self.specialdefense = self.SpecialDefense
-        self.notes = self.Notes
-        self.regenerationroundstart = self.RegenerationRoundStart
-        self.regenerationhitpoint = self.RegenerationHitPoint
-        self.regenerateafterdamage = self.RegenerateAfterDamage
+        self.abbr: str = self.Abbr
+        self.name: str = self.Name
+        self.charactertype: str = self.CharacterType
+        self.racetype: str = self.RaceType
+        self.classtype: str  = self.ClassType
+        self.level: str  = self.Level
+        self.savingthrowclasstype: str  = self.SavingThrowClassType
+        self.savingthrowlevel: int = self.SavingThrowLevel
+        self.savingthrowlevelpdm: int = self.SavingThrowLevelPDM
+        self.size: int = self.Size
+        self.attacksperround: str = self.AttacksPerRound
+        self.ac: int = self.AC
+        self.thac0: int = self.THAC0
+        self.defensiveadjustment: int = self.DefensiveAdjustment
+        self.missileattack: int = self.MissileAttack
+        self.damageperattack: int = self.DamagePerAttack
+        self.specialattack: str  = self.SpecialAttack
+        self.specialdefense: str  = self.SpecialDefense
+        self.notes: str  = self.Notes
+        self.regenerationroundstart: int = self.RegenerationRoundStart
+        self.regenerationhitpoint: int = self.RegenerationHitPoint
+        self.regenerateafterdamage: int = self.RegenerateAfterDamage
         
         # Assign member variables to parameters        
-        self.combattype = combattype
-        self.group = group
-        self.seq = seq
-        self.abbrseq = self.abbr + str(self.seq)
-        self.initiative = initiative
-        self.damage = damage
-        self.attackmodifier = attackmodifier
-        self.defensemodifier = defensemodifier
+        self.combattype: str = combattype
+        self.group: str = group
+        self.seq: int = seq
+        self.abbrseq: str = self.abbr + str(self.seq)
+        if initiative is None:
+            self.initiative: int = 0
+        else:
+            self.initiative: int = initiative
+
+        if damage is None:
+            self.damage: int = 0
+        else:
+            self.damage: int = damage
+            
+        if attackmodifier is None:
+            self.attackmodifier: int = 0
+        else:
+            self.attackmodifier: int = attackmodifier
+        
+        if defensemodifier is None:
+            self.defensemodifier: int = 0
+        else:
+            self.defensemodifier: int = defensemodifier
 
         if hp == 0:
-            self.hp = self.calculate_hitpoints( self.HitDiceTypeCode, self.HitDie, self.HitDice, self.HitDiceMin, self.HitDiceMax, self.HitDiceModifier, self.HitDieValue, self.HitPointStart, self.HitPointMin, self.HitPointMax )
+            self.hp: int = self.calculate_hitpoints( self.HitDiceTypeCode, self.HitDie, self.HitDice, self.HitDiceMin, self.HitDiceMax, self.HitDiceModifier, self.HitDieValue, self.HitPointStart, self.HitPointMin, self.HitPointMax )
         else:
-            self.hp = hp
+            self.hp: int = hp
         
         if self.HitPointStart == 0:    
-            self.hpmax = self.hp
+            self.hpmax: int = self.hp
         else:
-            self.hpmax = self.HitPointStart
+            self.hpmax: int = self.HitPointStart
         
-        self.xp = self.ExperienceBase + self.ExperienceAdjustment + (self.hp * self.ExperienceHitPointMultiplier)
-        if self.ExperienceAddHitPoint == True:
+        self.xp: int = self.ExperienceBase + self.ExperienceAdjustment + (self.hp * self.ExperienceHitPointMultiplier)
+        if self.ExperienceAddHitPoint:
             self.xp += self.hp
         
-        self.defender_abbrseq = ''
-        self.inactivereason = ''
-        self.regenerationround = 0
+        self.defender_abbrseq: str = ''
+        self.inactivereason: str  = ''
+        self.regenerationround: int = 0
         
-    def calculate_hitpoints(self, hitdicetypecode, hitdie, hitdice, hitdicemin, hitdicemax, hitdicemodifier, hitdievalue, hitpointstart, hitpointmin, hitpointmax) -> int:
+    def calculate_hitpoints(self, hitdicetypecode: str, hitdie: int, hitdice: int, hitdicemin: int, hitdicemax: int, hitdicemodifier: int, hitdievalue: int, hitpointstart: int, hitpointmin: int, hitpointmax: int) -> int:
         """calculate hit points based on variable hit point rules"""
         DIE_FIXED                 = 'DF'   # Die Fixed
         DIE_FIXED_POINTS_FIXED    = 'DFPF' # Die Fixed Points Fixed
@@ -107,42 +122,42 @@ class Combatant():
         POINTS_FIXED              = 'PF'   # Points Fixed
         POINTS_VARIABLE           = 'PV'   # Points Variable
 
-        hitpoints = -999
-        variablehitpointrange = hitpointmax - hitpointmin + 1
+        hitpoints: int = -999
+        variablehitpointrange: int = hitpointmax - hitpointmin + 1
 
         # Process hit point fixed die values
         if hitdicetypecode in [ DIE_FIXED, DIE_FIXED_POINTS_FIXED, DIE_FIXED_POINTS_VARIABLE]:
             if hitdievalue == 0:
-                hitpoints = Dice.roll_dice(hitdice, hitdie, hitdicemodifier, 0)
+                hitpoints: int = Dice.roll_dice(hitdice, hitdie, hitdicemodifier, 0)
             else:
-                hitpoints = hitdice * hitdievalue
+                hitpoints: int = hitdice * hitdievalue
                 
             if hitdicetypecode == DIE_FIXED_POINTS_FIXED:
-                hitpoints = hitpoints + hitpointstart
+                hitpoints: int = hitpoints + hitpointstart
                 
             if hitdicetypecode == DIE_FIXED_POINTS_VARIABLE:
-                hitpoints = hitpoints + hitpointmin + Dice.roll_die(variablehitpointrange, 0)
+                hitpoints: int = hitpoints + hitpointmin + Dice.roll_die(variablehitpointrange, 0)
                 
             return hitpoints
 
         # Process hit point variable die values
         if hitdicetypecode == DIE_VARIABLE:
-            variablehitdicerange = (hitdicemin - 1) + Dice.roll_die(hitdicemax - hitdicemin + 1)
+            variablehitdicerange: int = (hitdicemin - 1) + Dice.roll_die(hitdicemax - hitdicemin + 1)
             if hitdievalue == 0:
-                hitpoints = Dice.roll_dice(variablehitdicerange, hitdie, hitdicemodifier, 0)
+                hitpoints: int = Dice.roll_dice(variablehitdicerange, hitdie, hitdicemodifier, 0)
             else:
-                hitpoints = variablehitdicerange * hitdievalue
+                hitpoints: int = variablehitdicerange * hitdievalue
             
             return hitpoints
     
         # Process hit point fixed point values
         if hitdicetypecode == POINTS_FIXED:
-            hitpoints = hitpointstart
+            hitpoints: int = hitpointstart
             return hitpoints
         
         # Process hit point variable point values        
         if hitdicetypecode == POINTS_VARIABLE:
-            hitpoints = hitpointmin + Dice.roll_die(variablehitpointrange, 0)
+            hitpoints: int = hitpointmin + Dice.roll_die(variablehitpointrange, 0)
 
         return hitpoints
 
@@ -153,26 +168,24 @@ class Combatant():
     def format_charactertype(self) -> str:
         """format class information"""
         if self.charactertype == self.TYPE_PLAYER_CHARACTER:
-            charactertype = "Player Character"
+            charactertype: str  = "Player Character"
         elif self.charactertype == self.TYPE_NON_PLAYER_CHARACTER:
-            charactertype = "Non-Player Character"
+            charactertype: str  = "Non-Player Character"
         else:
-            charactertype = "Monster"
+            charactertype: str  = "Monster"
 
         return charactertype
 
     def format_classtype(self) -> str:
         """format class information"""
-        classnames = [self.CLASSTYPE.get(name) for name in self.classtype.split(',')]
-        classname  = ','.join(classname for classname in classnames) 
-        return classname
+        classtypes: list = [self.CLASSTYPE.get(name) for name in self.classtype.split(',')]
+        classtype: str   = ','.join(classname for classname in classtypes) 
+        return classtype
 
     def format_damage_per_attack(self) -> str:
         """format damage per attack information"""
-        damage = ''
-        if (self.damageperattack == None) or (len(str(self.damageperattack)) == 0):
-            pass
-        else:
+        damage: str = ''
+        if self.damageperattack:
             damage += f"{ui1.UI.INDENT_LEVEL_03}Damage Per Attack:"
             damage += f"\n{ui1.UI.INDENT_LEVEL_04}"
             damage += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.damageperattack.lstrip().split('|'))
@@ -182,10 +195,8 @@ class Combatant():
 
     def format_notes(self) -> str:
         """format notes information"""
-        notes = ''
-        if (self.notes == None) or (len(str(self.notes)) == 0):
-            pass
-        else:
+        notes: str  = ''
+        if self.notes:
             notes += ui1.UI.INDENT_LEVEL_03 + 'Notes:'
             notes += '\n' + ui1.UI.INDENT_LEVEL_04
             notes += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.notes.lstrip().split('|'))
@@ -195,7 +206,7 @@ class Combatant():
 
     def format_saving_throw(self) -> str:
         """format special attack information"""
-        savingthrow = f'{ui1.UI.INDENT_LEVEL_03} Saving Throw:'
+        savingthrow: str  = f'{ui1.UI.INDENT_LEVEL_03} Saving Throw:'
         savingthrow += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
         savingthrow += '\n'
 
@@ -203,7 +214,7 @@ class Combatant():
 
     def format_special_attacks(self) -> str:
         """format special attack information"""
-        specialattack = ''
+        specialattack: str  = ''
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
         else:
@@ -216,7 +227,7 @@ class Combatant():
 
     def format_special_defense(self) -> str:
         """format special defense information"""
-        specialdefense = ''
+        specialdefense: str  = ''
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
         else:
@@ -229,10 +240,11 @@ class Combatant():
 
     def get_level(self, level) -> list:
         """get level of each class"""
-        if level is None:
-            return list('0')
-        else:
+        if level:
             return list(l for l in level.split(','))
+
+        return list('0')
+
 
     # ***KEEP***
     # def get_attacks(self, round) -> int:
@@ -294,7 +306,7 @@ class Combatant():
         if self.hp > self.hpmax:
             self.hp = self.hpmax
 
-    def take_damage(self, damage) -> None:
+    def take_damage(self, damage: int) -> None:
         """record damage taken"""
         self.hp -= damage
         if self.hp < 0:
@@ -304,7 +316,7 @@ class Combatant():
         if self.hp > self.hpmax:
             self.hp = self.hpmax
 
-    def was_hit_successful(self, hitroll, defenderarmorclass, defensemodifier) -> bool:
+    def was_hit_successful(self, hitroll: int, defenderarmorclass: int, defensemodifier: int) -> bool:
         """determine 'to hit' value"""
         if hitroll >= (self.thac0 - defenderarmorclass + defensemodifier - self.attackmodifier):
             return True
@@ -331,29 +343,29 @@ class Encounter():
     ATTACK_CRITICAL_FUMBLE       = 1
     ATTACK_CRITICAL_HIT          = 20
 
-    COMBATTYPE_FRIEND = 'FRIEND'
-    COMBATTYPE_FOE    = 'FOE'
+    COMBATTYPE_FRIEND            = 'FRIEND'
+    COMBATTYPE_FOE               = 'FOE'
     
     # Attributes
-    friend_count = 0
-    foe_count = 0
-    combatant_attack_number = 1
-    combatants = []
+    friend_count: int = 0
+    foe_count: int = 0
+    combatant_attack_number: int = 1
+    combatants: list = []
 
     def __init__(self) -> None:
-        self.encounter = 1
-        self.round = 1
-        self.initiative = self.INITIATIVE_ACTIVE_MAXIMUM
-        self.ismissileattack = True
+        self.encounter: int = 1
+        self.round: int = 1
+        self.initiative: int = self.INITIATIVE_ACTIVE_MAXIMUM
+        self.ismissileattack: bool = True
         self.data = cd1.CombatData()
         self.load_saving_throws()
 
-    def calculate_earned_xp(self, originalhp, hp, damage, xp) -> int:
+    def calculate_earned_xp(self, originalhp: int, hp: int, damage: int, xp: int) -> int:
         """calculate experience points earned based upon total hit points and damage inflicted"""
         if damage > hp:
-            value = hp
+            value: int = hp
         else:
-            value = damage
+            value: int = damage
             
         returnvalue = int((value / originalhp) * xp)
         return returnvalue
@@ -364,24 +376,17 @@ class Encounter():
 
         # Detect duplicate initiative and esequence
         initiative = set()
-        #duplicates_exist = False
         for i in range(len(self.combatants)):
             while self.combatants[i].initiative in initiative:
                 self.combatants[i].initiative += 1
-                # if duplicates_exist == False:
-                #     duplicates_exist = True
                 
             initiative.add(self.combatants[i].initiative)
 
-        # if duplicates_exist:
-        #     # re-sort combatants by initiative
-        #     self.sort_combatants_by_initative()
-        
         self.sort_combatants_by_initative()
             
-    def count_combatants(self, combattype) -> int:
+    def count_combatants(self, combattype: str) -> int:
         """count number of available combatants"""
-        combatant_count = 0
+        combatant_count: int = 0
         for combatant in self.combatants:
             if combatant.abbr == Combatant.DUNGEON_MASTER:
                 continue
@@ -398,8 +403,8 @@ class Encounter():
 
     def count_available_combatants(self) -> None:
         """count available combatants"""
-        self.friend_count = self.count_combatants(self.COMBATTYPE_FRIEND)
-        self.foe_count = self.count_combatants(self.COMBATTYPE_FOE)
+        self.friend_count: int = self.count_combatants(self.COMBATTYPE_FRIEND)
+        self.foe_count: int = self.count_combatants(self.COMBATTYPE_FOE)
     
     def delete_dead_oponents(self) -> None:
         """delete dead opponents from database and active combat list"""
@@ -433,19 +438,19 @@ class Encounter():
             elif attacker.initiative < self.INITIATIVE_ACTIVE_MINIMUM:
                 return attacker
 
-            elif self.ismissileattack == True:
+            elif self.ismissileattack:
                 if attacker.missileattack == False:
                     continue
 
             # set event initiative to attacker's
-            self.initiative = attacker.initiative
+            self.initiative: int = attacker.initiative
             
             # return attacker
             return attacker
 
     def format_attack_type(self) -> str:
         """format attack type"""
-        message = f"{'Missile' if self.ismissileattack else 'Melee'}"
+        message: str = f"{'Missile' if self.ismissileattack else 'Melee'}"
         return message
 
     def format_combatants(self) -> str:
@@ -454,7 +459,7 @@ class Encounter():
         SIZE = {"S": "SMALL", "M": "MEDIUM", "L": "LARGE"}
         
         """format all combatant information"""
-        message = '\nCombatants:'
+        message: str = '\nCombatants:'
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
         message += f'\n       |                                 |    SIZE     |      |       |       |    |        | ATT | DEF'
         message += f'\n TYPE  | ABBRSEQ  NAME                   | RAC:CLS-LVL | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
@@ -475,25 +480,25 @@ class Encounter():
     
     def format_encounter(self) -> str:
         """format encounter information"""
-        message = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
+        message: str = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
         return message
 
     def get_combatants(self) -> None:
         """get combatants from participant database"""
         self.combatants = []
         self.data.load_combatants()
-        combatantdata = self.data.combatants
+        combatantdata: dict = self.data.combatants
         for combatant in combatantdata:
-            abbr = combatantdata[combatant].get("Abbr")
-            participant = self.data.participants.get(abbr)
-            combattype = combatantdata[combatant].get("combattype")
-            combatgroup = combatantdata[combatant].get("group")
-            combatsequence = combatantdata[combatant].get("seq")
-            combathitpoints = combatantdata[combatant].get("hp")
-            combatattackmodifier = combatantdata[combatant].get("attackmodifier")
-            combatdefensemodifier = combatantdata[combatant].get("defensemodifier")
-            combatinitiative = 0
-            combatdamage = 0
+            abbr: str = combatantdata[combatant].get("Abbr")
+            participant: str = self.data.participants.get(abbr)
+            combattype: str = combatantdata[combatant].get("combattype")
+            combatgroup: str = combatantdata[combatant].get("group")
+            combatsequence: int = combatantdata[combatant].get("seq")
+            combathitpoints: int = combatantdata[combatant].get("hp")
+            combatattackmodifier: int = combatantdata[combatant].get("attackmodifier")
+            combatdefensemodifier: int = combatantdata[combatant].get("defensemodifier")
+            combatinitiative: int = 0
+            combatdamage: int = 0
         
             # instantiate new combatant
             preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combatattackmodifier, combatdefensemodifier, **participant)
@@ -501,8 +506,8 @@ class Encounter():
             # append combatant to combatants list
             self.combatants.append(preparedcombatant)
 
-    def get_saving_throw(self, savingthrowclasstype, savingthrowlevel, savingthrowlevelpdm, attacktype):
-        savingthrowvalue = 0
+    def get_saving_throw(self, savingthrowclasstype: str, savingthrowlevel: int, savingthrowlevelpdm: int, attacktype: str):
+        savingthrowvalue: int = 0
         for savingthrow in self.savingthrows:
             if savingthrow.classtype == savingthrowclasstype:
                 if attacktype in Saving_Throw.SAVING_THROW_POISON_DEATH_MAGIC:
@@ -516,7 +521,7 @@ class Encounter():
                 
         return savingthrowvalue
             
-    def is_combatant(self, abbrseq) -> bool:
+    def is_combatant(self, abbrseq: str) -> bool:
         """check if passed abbrseq key is in the active combatant list"""
         for combatant in self.combatants:
             if combatant.abbrseq == abbrseq:
@@ -527,7 +532,7 @@ class Encounter():
     def load_combatants(self) -> None:
         """load combatant information"""
         if len(self.combatants) > 0:
-            combatant_saved_initiative = {combatant.abbrseq: combatant.initiative for combatant in self.combatants}
+            combatant_saved_initiative: dict = {combatant.abbrseq: combatant.initiative for combatant in self.combatants}
             
         self.get_combatants()
         for combatant in self.combatants:
@@ -537,7 +542,7 @@ class Encounter():
 
             # save combatant initiative (if exists)
             try:
-                saved_initiative = combatant_saved_initiative[combatant.abbrseq]
+                saved_initiative: int = combatant_saved_initiative[combatant.abbrseq]
                 if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
                     combatant.initiative = saved_initiative
             except:
@@ -556,15 +561,15 @@ class Encounter():
         """load savings throw information"""
         self.savingthrows = []
         self.data.load_saving_throws()
-        savingthrowdata = self.data.savingthrows
+        savingthrowdata: int = self.data.savingthrows
         for savingthrow in savingthrowdata:
-            classtype = savingthrowdata[savingthrow].get("ClassType")
-            level = savingthrowdata[savingthrow].get("Level")
-            ppdm = savingthrowdata[savingthrow].get("PPDM")
-            pp = savingthrowdata[savingthrow].get("PP")
-            rsw = savingthrowdata[savingthrow].get("RSW")
-            bw = savingthrowdata[savingthrow].get("BW")
-            s = savingthrowdata[savingthrow].get("S")
+            classtype: str = savingthrowdata[savingthrow].get("ClassType")
+            level: int = savingthrowdata[savingthrow].get("Level")
+            ppdm: int = savingthrowdata[savingthrow].get("PPDM")
+            pp: int = savingthrowdata[savingthrow].get("PP")
+            rsw: int = savingthrowdata[savingthrow].get("RSW")
+            bw: int = savingthrowdata[savingthrow].get("BW")
+            s: int = savingthrowdata[savingthrow].get("S")
             
             # instantiate new saving throw
             preparedsavingthrows = Saving_Throw(classtype, level, ppdm, pp, rsw, bw, s)
@@ -579,8 +584,11 @@ class Encounter():
         self.encounter += 1
         self.prepare_next_round(True)
         
-    def prepare_next_round(self, reset=False) -> None:
+    def prepare_next_round(self, reset: bool = None) -> None:
         """prepare next round for attack"""
+        if reset is None:
+            reset = False
+        
         if reset:
             self.round = 1
         else:
@@ -630,7 +638,7 @@ class Saving_Throw():
     SAVING_THROW_TYPE = ['paralyze', 'poison', 'death magic', 'petrify', 'polymorph', 'rod staff wand', 'breath weapon', 'spell']
     SAVING_THROW_POISON_DEATH_MAGIC = ['poison', 'death magic']
     
-    def __init__(self, classtype, level, ppdm, pp, rsw, bw, s) -> None:
+    def __init__(self, classtype: str, level: int, ppdm: int, pp: int, rsw: int, bw: int, s: int) -> None:
         self.classtype                = classtype
         self.level                    = level
         self.detail                   = {}
@@ -643,6 +651,6 @@ class Saving_Throw():
         self.detail['breath weapon']  = bw
         self.detail['spell']          = s
 
-    def __str__(self):
-        message = f'Class: {self.classtype} Level: {self.level}'
+    def __str__(self) -> str:
+        message: str = f'Class: {self.classtype} Level: {self.level}'
         return message
