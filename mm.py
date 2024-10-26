@@ -283,7 +283,7 @@ def get_all_combatants_initiative(ui, encounter) -> None:
 
     encounter.check_duplicate_initiative()
     for combatant in encounter.combatants:
-        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative)
+        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp)
         
     return
 
@@ -550,20 +550,13 @@ def process_attack_regular(ui, encounter, attacker) -> None:
 
     # check if critically fumbled attack
     if len(get_input(ui, f"{ui.INDENT_LEVEL_04}Is attack fumbled/cursed? ([Enter] for No, Y for Yes) ")) == 0:
-        ui.output('\n')
         return
 
-    ui.output('\n')
-
     # process critical fumble
-    damage_raw = ''
     penalty_xp = 0
-    while damage_raw == '':
-        damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_02}Enter {attacker.abbr}{attacker.seq} self damage: ')
-        if attacker.combattype == encounter.COMBATTYPE_FRIEND:
-            raw_xp = ''
-            while raw_xp == '':
-                penalty_xp = get_numeric_input(ui, '{ui.INDENT_LEVEL_03}Enter penalty xp (-number): ')
+    damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_05}Enter {attacker.abbr}{attacker.seq} fumble damage: ')
+    if attacker.combattype == encounter.COMBATTYPE_FRIEND:
+        penalty_xp = get_numeric_input(ui, f"{ui.INDENT_LEVEL_05}Enter penalty xp (-number): ")
 
     message = encounter.format_attack_type() + " fumbled/cursed damage"
     log_hit_action(ui, encounter, attacker, defender, damage, 0, penalty_xp, message)
@@ -598,14 +591,14 @@ def process_attack_special(ui, encounter, attacker) -> None:
         if len(get_input(ui, f"{ui.INDENT_LEVEL_03}If save successful, defender takes no damage or 50% damage? ([Enter] = None, Y = 50%) ")) > 0:
             saving_throw_half_damage = True
         
-        ui.output(f'{ui.INDENT_LEVEL_03}Saving Throw Types:')
+        ui.output(f'{ui.INDENT_LEVEL_04}Saving Throw Type:')
         saving_throw_types = ''
         for index, type in enumerate(cm1.Saving_Throw.SAVING_THROW_TYPE, 1):
-            saving_throw_types += f'{ui.INDENT_LEVEL_04}{str(index)}: {type}\n'
+            saving_throw_types += f'{ui.INDENT_LEVEL_05}{str(index)}: {type}\n'
         
         ui.output(saving_throw_types)
         while saving_throw_type == 0:
-            saving_throw_type_raw = get_numeric_input(ui, f'{ui.INDENT_LEVEL_03}Select saving throw type: ', ui.INDENT_LEVEL_04)
+            saving_throw_type_raw = get_numeric_input(ui, f'{ui.INDENT_LEVEL_04}Select saving throw type: ', ui.INDENT_LEVEL_04)
             if (saving_throw_type_raw > 0) and (saving_throw_type_raw <= len(cm1.Saving_Throw.SAVING_THROW_TYPE)):
                 saving_throw_type = saving_throw_type_raw - 1
                 break

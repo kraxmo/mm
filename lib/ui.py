@@ -6,6 +6,7 @@ class UI:
     INDENT_LEVEL_02 = '  + '
     INDENT_LEVEL_03 = '    * '
     INDENT_LEVEL_04 = '      -- '
+    INDENT_LEVEL_05 = '         -+ '
     
     @classmethod
     def get_input(self, action_prompt: str, response_option: str = None, response_exception: Exception = None):

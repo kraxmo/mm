@@ -98,7 +98,7 @@ class TestCombatData(TestCase):
 
     def test_log_initiative(self):
         bignumber = 9999999
-        self.data.log_initiative(bignumber, bignumber, 'TEST', 'ALIEL', 99, 'TEST', bignumber)
+        self.data.log_initiative(bignumber, bignumber, 'TEST', 'ALIEL', 99, 'TEST', bignumber, bignumber, bignumber)
     
     def test_update_combatant_hit_points(self):
         self.data.update_combatant_hit_points('ALIEL', 99, 99, 99)
