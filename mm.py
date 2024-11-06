@@ -44,7 +44,7 @@ class ListCombatantsInformation(Action):
             if combatant.combattype != encounter.COMBATTYPE_FRIEND:
                 continue
             
-            if combatant.charactertype == cm1.Combatant.TYPE_MONSTER:
+            if combatant.is_monster():
                 continue
             
             special_attacks = combatant.format_special_attacks()
@@ -260,11 +260,11 @@ def get_all_combatants_initiative(ui, encounter) -> None:
 
     ui.output('\nEnter Initiative:')            
     for combatant in encounter.combatants:
-        if combatant.abbr == combatant.DUNGEON_MASTER:
+        if combatant.is_dungeon_master():
             combatant.initiative = encounter.INITIATIVE_ACTIVE_MAXIMUM
             continue
 
-        if combatant.CharacterType == combatant.TYPE_PLAYER_CHARACTER:
+        if combatant.is_player_character():
             get_combatant_initiative(ui, encounter, combatant)
         else:
             if (combatant.initiative >= encounter.INITIATIVE_ACTIVE_MINIMUM):
@@ -396,7 +396,7 @@ def get_defenders(ui, encounter, attacker) -> list:
 def get_to_hit_roll(ui, encounter, combatant) -> int:
     """get to-hit roll value"""
     message = f"{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: ("
-    if combatant.charactertype != combatant.TYPE_PLAYER_CHARACTER:
+    if not combatant.is_player_character():
         message += "<Enter> = autoroll, "
 
     message += f"{encounter.TO_HIT_DIE_MINIMUM}-{encounter.TO_HIT_DIE_MAXIMUM} manual entry) "
@@ -405,7 +405,7 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
     while to_hit_input == '':
         to_hit_input = get_input(ui, message)
         if to_hit_input.isnumeric() == False:
-            if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
+            if combatant.is_player_character():
                 ui.output(f"{ui.INDENT_LEVEL_03}'To Hit' roll of '{to_hit_input}' is not a number.")
                 to_hit_input = ''
                 continue
@@ -427,9 +427,7 @@ def initialize_round(ui, encounter) -> None:
     ui.output(encounter.format_encounter())
     ui.output(encounter.format_combatants())
 
-    if len(get_input(ui, '\nRoll initiative for all combatants? (<Enter> = Yes, N = No) ')) == 0:
-        # Determine initiative for all combatants
-        get_all_combatants_initiative(ui, encounter)
+    get_all_combatants_initiative(ui, encounter)
 
     ui.output(encounter.format_encounter())
     ui.output(encounter.format_combatants())
@@ -484,7 +482,14 @@ def process_attack_sequence(ui, encounter) -> bool:
     ui.output(f'\n{ui.INDENT_LEVEL_01}{attacker.abbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
     ui.output(f'{ui.INDENT_LEVEL_02}{encounter.format_attack_type()} Attack #{encounter.combatant_attack_number}')
 
-    if len(get_input(ui, f'{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = No, y = Yes) ')) > 0:
+    if attacker.is_dungeon_master():
+        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = Yes, y = No) "
+        prompt_default = 'Yes'
+    else:
+        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = No, y = Yes) "
+        prompt_default = ''
+        
+    if len(get_input(ui, prompt) or prompt_default) > 0:
         ui.output(f'{ui.INDENT_LEVEL_02}ATTACK SKIPPED')
         process_attack_end(ui, encounter)
         return False
@@ -615,7 +620,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
         saving_throw_modifier = 1.0
         if saving_throw_permitted == True:
             saving_throw = encounter.get_saving_throw(defender.savingthrowclasstype, defender.savingthrowlevel, defender.savingthrowlevelpdm, cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type])
-            if defender.charactertype == defender.TYPE_PLAYER_CHARACTER:
+            if defender.is_player_character():
                 saving_throw_value = 0
                 while saving_throw_value == 0:
                     saving_throw_value_raw = get_numeric_input(ui, f"{ui.INDENT_LEVEL_03}Enter {defender.abbrseq}'s save vs. {cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type]}: ({saving_throw} needed) ", ui.INDENT_LEVEL_04)
@@ -665,23 +670,6 @@ def process_attack_special(ui, encounter, attacker) -> None:
         ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', str(damage))+f' points damage ({defender.hp} remaining)\n')
 
     return
-
-def process_combatant_initiative(ui, encounter) -> bool:
-    """process getting initiative for all combatants"""
-    ui.output('\nEnter Initiative:')
-    if encounter.round > 1:
-        if len(get_input(ui, f'{ui.INDENT_LEVEL_01}Re-roll initiative? (<Enter> for No, Y for Yes) ')) == 0:
-            return False
-            
-    for combatant in encounter.combatants:
-        if combatant.charactertype == combatant.TYPE_PLAYER_CHARACTER:
-            get_combatant_initiative(ui, encounter, combatant)
-        else:
-            combatant.initiative = encounter.roll_nonplayer_initiative()
-
-    encounter.check_duplicate_initiative()
-    for combatant in encounter.combatants:
-        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.Abbr, combatant.seq, combatant.group, combatant.initiative)
 
 def process_set_initiative(ui, encounter) -> None:
     """process setting current encounter's initiative"""

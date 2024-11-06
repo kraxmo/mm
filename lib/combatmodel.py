@@ -167,9 +167,9 @@ class Combatant():
 
     def format_charactertype(self) -> str:
         """format class information"""
-        if self.charactertype == self.TYPE_PLAYER_CHARACTER:
+        if self.is_player_character():
             charactertype: str  = "Player Character"
-        elif self.charactertype == self.TYPE_NON_PLAYER_CHARACTER:
+        elif self.is_non_player_character():
             charactertype: str  = "Non-Player Character"
         else:
             charactertype: str  = "Monster"
@@ -278,14 +278,22 @@ class Combatant():
     
     def is_dead(self) -> bool:
         """check if combatant is dead"""
-        if self.CharacterType == self.TYPE_MONSTER:
+        if self.is_monster():
             return self.hp <= 0
         else:
             return self.hp <= -10
+
+    def is_dungeon_master(self) -> bool:
+        return self.abbr == self.DUNGEON_MASTER
     
-    def is_unconscious(self) -> bool:
-        """check if combatant is unconscious"""
-        return -10 < self.hp <= 0
+    def is_player_character(self) -> bool:
+        return self.charactertype == self.TYPE_PLAYER_CHARACTER
+
+    def is_non_player_character(self) -> bool:
+        return self.charactertype == self.TYPE_NON_PLAYER_CHARACTER
+
+    def is_monster(self) -> bool:
+        return self.charactertype == self.TYPE_MONSTER
     
     def is_spellcaster(self) -> bool:
         """check if combatant could be a spell caster"""
@@ -295,6 +303,10 @@ class Combatant():
             
         return False
 
+    def is_unconscious(self) -> bool:
+        """check if combatant is unconscious"""
+        return -10 < self.hp <= 0
+    
     def load_participant_values(self, **kwargs) -> None:
         """load participant key-valued pairs into member variables"""
         for key, value in kwargs.items():
@@ -468,7 +480,7 @@ class Encounter():
             if linecount % 3 == 0:
                 message += f'\n------ | -------- ---------------------- | ----------- | ---- | ----- | ----- | -- | ------ | --- | ---'
 
-            if combatant.charactertype == Combatant.TYPE_MONSTER:
+            if combatant.is_monster():
                 message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |    {SIZE[combatant.size].ljust(6)}   | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
             else:
                 message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |   {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)}  | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
