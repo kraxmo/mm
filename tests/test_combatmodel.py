@@ -12,7 +12,6 @@ from lib.combatdata import(
 from unittest import(
     TestCase,
 )
-
 class TestCombatModel(TestCase):
     @classmethod
     def setUpClass(self):
@@ -140,6 +139,50 @@ class TestCombatModel(TestCase):
             with self.subTest(abbr=abbr, seq=seq):
                 self.assertFalse(combatant.is_dead())
                 
+    def test_combatant_is_dungeon_master(self):
+        for combatant in self.encounter.combatants:
+            abbr = combatant.abbr
+            seq  = combatant.seq
+            classtype = combatant.classtype
+            with self.subTest(abbr=abbr, seq=seq, classtype=classtype):
+                if abbr == 'AAA_DM':
+                    self.assertTrue(combatant.is_dungeon_master())
+                else:
+                    self.assertFalse(combatant.is_dungeon_master())
+
+    def test_combatant_is_monster(self):
+        for combatant in self.encounter.combatants:
+            abbr = combatant.abbr
+            seq  = combatant.seq
+            classtype = combatant.classtype
+            with self.subTest(abbr=abbr, seq=seq, classtype=classtype):
+                if abbr in ['AAA_DM', 'ANTG', 'APEC', 'DRREDAD']:
+                    self.assertTrue(combatant.is_monster())
+                else:
+                    self.assertFalse(combatant.is_monster())
+
+    def test_combatant_is_non_player_character(self):
+        for combatant in self.encounter.combatants:
+            abbr = combatant.abbr
+            seq  = combatant.seq
+            classtype = combatant.classtype
+            with self.subTest(abbr=abbr, seq=seq, classtype=classtype):
+                if abbr in ['ERIC', 'THAB']:
+                    self.assertTrue(combatant.is_non_player_character())
+                else:
+                    self.assertFalse(combatant.is_non_player_character())
+
+    def test_combatant_is_player_character(self):
+        for combatant in self.encounter.combatants:
+            abbr = combatant.abbr
+            seq  = combatant.seq
+            classtype = combatant.classtype
+            with self.subTest(abbr=abbr, seq=seq, classtype=classtype):
+                if abbr in ['ALIEL', 'DORAN']:
+                    self.assertTrue(combatant.is_player_character())
+                else:
+                    self.assertFalse(combatant.is_player_character())
+
     def test_combatant_is_unconscious(self):
         for combatant in self.encounter.combatants:
             abbr = combatant.abbr
