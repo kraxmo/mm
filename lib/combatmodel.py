@@ -384,7 +384,7 @@ class Encounter():
     
     def check_duplicate_initiative(self) -> None:
         """check for duplicate initiative and adjust"""
-        self.sort_combatants_by_initative()
+        self.sort_combatants_by_initiative()
 
         # Detect duplicate initiative and esequence
         initiative = set()
@@ -394,7 +394,7 @@ class Encounter():
                 
             initiative.add(self.combatants[i].initiative)
 
-        self.sort_combatants_by_initative()
+        self.sort_combatants_by_initiative()
             
     def count_combatants(self, combattype: str) -> int:
         """count number of available combatants"""
@@ -634,7 +634,7 @@ class Encounter():
         """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
         return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
 
-    def sort_combatants_by_initative(self) -> None:
+    def sort_combatants_by_initiative(self) -> None:
         """sort combatant list"""
         self.combatants.sort(key=lambda c: c.initiative, reverse=True)
 

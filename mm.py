@@ -253,11 +253,15 @@ def find_next_defender(ui, encounter, attacker) -> cm1.Combatant:
 
 def get_all_combatants_initiative(ui, encounter) -> None:
     """get initiative for all combatants"""
-    if encounter.round > 1:
-        if len(get_input(ui, f'{ui.INDENT_LEVEL_01}Re-roll initiative? (<Enter> for No, Y for Yes) ')) == 0:
-            encounter.sort_combatants_by_initative()
+    if encounter.round == 1:
+        if len(get_input(ui, f'Roll initiative? (<Enter> for Yes, N for No) ')) > 0:
+            encounter.sort_combatants_by_initiative()
             return
-
+    else:
+        if len(get_input(ui, f'Re-roll initiative? (<Enter> for No, Y for Yes) ')) == 0:
+            encounter.sort_combatants_by_initiative()
+            return
+    
     ui.output('\nEnter Initiative:')            
     for combatant in encounter.combatants:
         if combatant.is_dungeon_master():
@@ -268,12 +272,10 @@ def get_all_combatants_initiative(ui, encounter) -> None:
             get_combatant_initiative(ui, encounter, combatant)
         else:
             if (combatant.initiative >= encounter.INITIATIVE_ACTIVE_MINIMUM):
-                initiative_reroll = get_input(ui, f"{ui.INDENT_LEVEL_01}Reroll {combatant.abbrseq}'s {combatant.initiative} initiative? (<Enter> for No, A for Auto-roll, M for Manual-entry) ")
-                # keep existing initiative
-                if len(initiative_reroll) == 0:
+                initiative_reroll = get_input(ui, f"{ui.INDENT_LEVEL_01}Re-roll {combatant.abbrseq}'s {combatant.initiative} initiative? (<Enter> for No, A for Auto-roll, M for Manual-entry) ")
+                if len(initiative_reroll) == 0: # keep existing initiative
                     continue
-                # manually enter new initiative
-                elif initiative_reroll == 'M':
+                elif initiative_reroll == 'M':  # manually enter new initiative
                     get_combatant_initiative(ui, encounter, combatant)
                     continue
             
@@ -289,7 +291,10 @@ def get_all_combatants_initiative(ui, encounter) -> None:
 
 def get_combatant_initiative(ui, encounter, combatant) -> None:
     """get combatant initiative values"""
-    initiative_prompt = f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative? (<Enter> for previous value {combatant.initiative}) "
+    initiative_prompt = f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative? "
+    if combatant.initiative > 0:
+        initiative_prompt += f"(<Enter> for previous value {combatant.initiative}) "
+        
     while True:
         if len(initiative := get_input(ui, initiative_prompt)) == 0:
             initiative = combatant.initiative
@@ -311,14 +316,14 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             continue
 
         elif int(initiative) < encounter.INITIATIVE_ACTIVE_MINIMUM:
-            inactive_initiative_prompt = f'{ui.INDENT_LEVEL_03}Initiative value {initiative} is for inactive combatants. Keep it? (<Enter> = Yes, N = No) '
+            inactive_initiative_prompt = f'{ui.INDENT_LEVEL_03}Initiative value {initiative} is for inactive combatants. Keep it? (<Enter> for Yes, N for No) '
             if len(get_input(ui, inactive_initiative_prompt)) == 0:
                 combatant.initiative = int(initiative)
                 inactivereason = ''
                 while len(inactivereason) == 0:
                     message = f'{ui.INDENT_LEVEL_04}Reason for inactivity? '
                     if len(combatant.inactivereason) > 0:
-                        message += f'(<Enter> = keep previous value {combatant.inactivereason}, <Reason> = new inactive reason) '
+                        message += f'(<Enter> to keep previous value {combatant.inactivereason}, <Reason> for new inactive reason) '
 
                     inactivereason = get_input(ui, message)
                     ui.output('\n')
@@ -397,7 +402,7 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
     """get to-hit roll value"""
     message = f"{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: ("
     if not combatant.is_player_character():
-        message += "<Enter> = autoroll, "
+        message += "<Enter> for autoroll, "
 
     message += f"{encounter.TO_HIT_DIE_MINIMUM}-{encounter.TO_HIT_DIE_MAXIMUM} manual entry) "
         
@@ -460,7 +465,7 @@ def process_attack_sequence(ui, encounter) -> bool:
         if len(attacker.inactivereason) > 0:
             message += f' (last status: {attacker.inactivereason})'
             
-        message += 'Should this change? (<Enter> = No, Y = Yes) '
+        message += 'Should this change? (<Enter> for No, Y for Yes) '
         if len(get_input(ui, message)) > 0:
             status_prompt = f'{ui.INDENT_LEVEL_02}Change initiative or inactive status? (<Enter> for initiative, new inactive status) '
             if len(status := get_input(ui, status_prompt)) == 0:
@@ -483,10 +488,10 @@ def process_attack_sequence(ui, encounter) -> bool:
     ui.output(f'{ui.INDENT_LEVEL_02}{encounter.format_attack_type()} Attack #{encounter.combatant_attack_number}')
 
     if attacker.is_dungeon_master():
-        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = Yes, y = No) "
+        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = Yes, N = No) "
         prompt_default = 'Yes'
     else:
-        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = No, y = Yes) "
+        prompt = f"{ui.INDENT_LEVEL_02}Skip attack? (<Enter> = No, Y = Yes) "
         prompt_default = ''
         
     if len(get_input(ui, prompt) or prompt_default) > 0:
@@ -503,7 +508,7 @@ def process_attack_sequence(ui, encounter) -> bool:
     else:
         process_attack_special(ui, encounter, attacker)
 
-    if len(get_input(ui, f'{ui.INDENT_LEVEL_02}Attack again? (<Enter> = No, y = Yes) ')) == 0:
+    if len(get_input(ui, f'{ui.INDENT_LEVEL_02}Attack again? (<Enter> for No, y for Yes) ')) == 0:
         process_attack_end(ui, encounter)
         return True
     else:
@@ -580,7 +585,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
         defender_list = [defender.abbrseq for defender in defenders]
         defender_list_prompt = f"{ui.INDENT_LEVEL_03}defender list:"
         defender_list_prompt += f"\n{ui.INDENT_LEVEL_04}{('\n'+ui.INDENT_LEVEL_04).join(defender_list)}\n"
-        defender_list_prompt += f"{ui.INDENT_LEVEL_03}Is this defender list correct? ([Enter = Yes, N = No]) "
+        defender_list_prompt += f"{ui.INDENT_LEVEL_03}Is this defender list correct? ([Enter for Yes, N for No]) "
         if len(ui.get_input(defender_list_prompt)) == 0:
             defender_list_verified = True
         
@@ -593,7 +598,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
     saving_throw_type = 0
     if len(get_input(ui, f"{ui.INDENT_LEVEL_03}Is saving throw allowed? ([Enter] for Yes, N for No) ")) == 0:
         saving_throw_permitted = True
-        if len(get_input(ui, f"{ui.INDENT_LEVEL_03}If save successful, defender takes no damage or 50% damage? ([Enter] = None, Y = 50%) ")) > 0:
+        if len(get_input(ui, f"{ui.INDENT_LEVEL_03}If save successful, defender takes no damage or 50% damage? ([Enter] for None, Y for 50%) ")) > 0:
             saving_throw_half_damage = True
         
         ui.output(f'{ui.INDENT_LEVEL_04}Saving Throw Type:')
@@ -611,7 +616,7 @@ def process_attack_special(ui, encounter, attacker) -> None:
     is_damage_variable = True
     if len(defender_list) > 1:
         # check for variable damage by defender
-        if len(get_input(ui, f"{ui.INDENT_LEVEL_02}Enter damage for each defender? [Enter = No, Y = Yes] ")) == 0:
+        if len(get_input(ui, f"{ui.INDENT_LEVEL_02}Enter damage for each defender? [Enter for No, Y for Yes] ")) == 0:
             is_damage_variable = False
 
     # process special attack vs. defenders
@@ -735,14 +740,14 @@ def process_round(ui, encounter) -> None:
 
         encounter.delete_dead_oponents()
         ui.output(f'\nRound {encounter.round} END:')
-        if len(get_input(ui, f'\nBegin next round? (<Enter> = Yes, n = No) ')) == 0:
+        if len(get_input(ui, f'\nBegin next round? (<Enter> for Yes, N for No) ')) == 0:
             ui.output_separator_line('-', True)
             encounter.prepare_next_round()
             ui.output(encounter.format_encounter())
             ui.output(encounter.format_combatants())
             continue
 
-        if len(get_input(ui, f'\nBegin next encounter? (<Enter> = Yes, n = No) ')) == 0:
+        if len(get_input(ui, f'\nBegin next encounter? (<Enter> for Yes, N for No) ')) == 0:
             encounter.prepare_next_encounter()
         
         ui.output_separator_line('-', True)
