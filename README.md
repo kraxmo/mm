@@ -1,5 +1,5 @@
 # mm
-Advanced Dungeons &amp; Dragons 1.0 melee manager
+Advanced Dungeons &amp; Dragons 1.0 Melee Manager
 
 This currently runs in CLI to track combat between defined combatants (friends and foes)
 
