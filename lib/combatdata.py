@@ -6,7 +6,7 @@ import lib.sqldb_access as db1
 class CombatData():
     def __init__(self):
         """connect to database"""
-        self.db = db1.SQLDB_Access(r'C:\users\jkraxberger\pyproj\pvt\mm\meleemanager.accdb')
+        self.db = db1.SQLDB_Access(r'C:\users\jkraxberger\pyproj\github\mm\meleemanager.accdb')
     
     def close(self) -> None:
         """close database connection"""

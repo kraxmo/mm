@@ -456,7 +456,7 @@ def process_attack_sequence(ui, encounter) -> bool:
     """process each attack: Return True for additional post-attacks check or False for no post-attack checks"""
     if (attacker := encounter.find_next_attacker()) == None:
         encounter.initiative = encounter.INITIATIVE_NONE
-        return
+        return False
 
     ui.output(f"{encounter.format_encounter()} | {encounter.format_attack_type()} Attacks")
     ui.output(encounter.format_combatants())
