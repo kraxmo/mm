@@ -3,7 +3,7 @@
 import configparser as cp1
 import lib.sqldb_access as db1
 
-CONFIG_FILE = r'C:\users\jkraxberger\pyproj\github\mm_SQLAlchemy\config.ini'
+CONFIG_FILE = r'C:\users\jkraxberger\pyproj\github\mm\config.ini'
 
 class CombatData():
     def __init__(self):
