@@ -503,7 +503,7 @@ class Encounter():
         for combatant in combatantdata:
             abbr: str = combatantdata[combatant].get("Abbr")
             participant: str = self.data.participants.get(abbr)
-            combattype: str = combatantdata[combatant].get("combattype")
+            combattype: str = combatantdata[combatant].get("CombatType")
             combatgroup: str = combatantdata[combatant].get("group")
             combatsequence: int = combatantdata[combatant].get("seq")
             combathitpoints: int = combatantdata[combatant].get("hp")

@@ -1,32 +1,40 @@
 #test_combatmodel.py
 
+import lib.sqldb_access as sa1
 from lib.combatmodel import(
     Combatant,
     Encounter,
 )
 
-from lib.combatdata import(
-    CombatData,
+from sqlalchemy import(
+    delete as sa_delete, 
+    insert as sa_insert,
+    update as sa_update, 
 )
 
 from unittest import(
     TestCase,
 )
+
 class TestCombatModel(TestCase):
+    ACCESS_DB_PATH = r"C:\users\jkraxberger\pyproj\github\mm_SQLAlchemy\meleemanager.accdb"  # Replace with your Access DB path
+
     @classmethod
     def setUpClass(self):
-        self.data = CombatData()
-        self.data_cursor = self.data.db.cursor
+        db = sa1.SQLDB_Access(self.ACCESS_DB_PATH)
+        combatant_table = db.get_table_definition("Combatant")
         
-        # disable all active Combantants (take all existing good combatants offline)
-        sql = "update [Combatant] set [isactive] = False"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
+        # disable all active Combatants (take all existing good combatants offline)
+        stmt = sa_update(combatant_table).values(isactive=False)
+        with db.engine.connect() as conn:
+            conn.execute(stmt)
+            conn.commit()
         
         # delete all test Combatants
-        sql = "delete from [Combatant] where [seq] >= 99"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
+        stmt = sa_delete(combatant_table).where(combatant_table.c.seq >= 99)
+        with db.engine.connect() as conn:
+            conn.execute(stmt)
+            conn.commit()
 
         # define test combatants
         combatants = [
@@ -43,34 +51,53 @@ class TestCombatModel(TestCase):
         ]
 
         # add test combatants to database
-        for combatant in combatants:
-            combattype = combatant['CombatType']
-            abbr = combatant['Abbr']
-            seq = combatant['seq']
-            group = combatant['group']
-            hpmax = combatant['hpmax']
-            hp = combatant['hp']
-            attackmodifier = combatant['attackmodifier']
-            defensemodifier = combatant['defensemodifier']
-            sql = f"insert into [Combatant] ([CombatType], [Abbr], [seq], [group], [hpmax], [hp], [attackmodifier], [defensemodifier]) "
-            sql += f"values ('{combattype}', '{abbr}', {int(seq)}, '{group}', {int(hpmax)}, {int(hp)}, {int(attackmodifier)}, {int(defensemodifier)})"
-            self.data_cursor.execute(sql)
-            self.data_cursor.commit()
+        with db.engine.connect() as conn:
+            for combatant in combatants:
+                combattype = combatant['CombatType']
+                abbr = combatant['Abbr']
+                seq = combatant['seq']
+                group = combatant['group']
+                hpmax = combatant['hpmax']
+                hp = combatant['hp']
+                attackmodifier = combatant['attackmodifier']
+                defensemodifier = combatant['defensemodifier']
+                stmt: str = sa_insert(combatant_table).values(
+                    CombatType      = combattype,
+                    Abbr            = abbr,
+                    seq             = seq,
+                    group           = group,
+                    hpmax           = hpmax,
+                    hp              = hp,
+                    attackmodifier  = attackmodifier,
+                    defensemodifier = defensemodifier,
+                )
+
+                conn.execute(stmt)
+                conn.commit()
 
     @classmethod
     def tearDownClass(self):
-        self.data = CombatData()
-        self.data_cursor = self.data.db.cursor
+        db = sa1.SQLDB_Access(self.ACCESS_DB_PATH)
+        combatant_table = db.get_table_definition('Combatant')
+        log_table = db.get_table_definition('Log')
         
         # delete all test Combatants
-        sql = "delete from [Combatant] where [seq] >= 99"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
+        stmt = sa_delete(combatant_table).where(combatant_table.c.seq >= 99)
+        with db.engine.connect() as conn:
+            conn.execute(stmt)
+            conn.commit()
+
+        # delete all test Logs
+        stmt = sa_delete(log_table).where(log_table.c.encounter == 9999999)
+        with db.engine.connect() as conn:
+            conn.execute(stmt)
+            conn.commit()
 
         # enable all active Combantants (place all existing good combatants online)
-        sql = "update [Combatant] set [isactive] = True"
-        self.data_cursor.execute(sql)
-        self.data_cursor.commit()
+        stmt = sa_update(combatant_table).values(isactive = True)
+        with db.engine.connect() as conn:
+            conn.execute(stmt)
+            conn.commit()
         
     def setUp(self):
         self.encounter = Encounter()
@@ -167,7 +194,7 @@ class TestCombatModel(TestCase):
             seq  = combatant.seq
             classtype = combatant.classtype
             with self.subTest(abbr=abbr, seq=seq, classtype=classtype):
-                if abbr in ['ERIC', 'THAB']:
+                if abbr in ['ERIC', 'THAB', 'TIGAR']:
                     self.assertTrue(combatant.is_non_player_character())
                 else:
                     self.assertFalse(combatant.is_non_player_character())

@@ -1,5 +1,19 @@
 #sqldb_access
 
+"""
+pip install pyodbc
+pip install sqlalchemy
+pip install sqlalchemy-access
+pip list
+    greenlet          3.1.1
+    pip               24.3.1
+    pyodbc            5.1.0
+    pywin32           308
+    SQLAlchemy        2.0.36
+    sqlalchemy-access 2.0.3
+    typing_extensions 4.12.2
+"""
+
 import pyodbc as py1
 from pyodbc import (
     DatabaseError    as pyo_DatabaseError,
@@ -8,6 +22,20 @@ from pyodbc import (
     ProgrammingError as pyo_ProgrammingError,
 )
 from lib.sqldb import SQLDB
+from sqlalchemy import (
+    create_engine as sa_create_engine, 
+    delete        as sa_delete,
+    insert        as sa_insert,
+    MetaData      as sa_MetaData, 
+    select        as sa_select,
+    Table         as sa_Table, 
+    update        as sa_update,
+)
+
+from sqlalchemy.exc import (
+    OperationalError as sa_OperationalError,
+    ProgrammingError as sa_ProgrammingError,
+)
 
 class SQLDB_Access(SQLDB):
     """A class to represent a class of sqldb for Microsoft Access"""
@@ -15,12 +43,19 @@ class SQLDB_Access(SQLDB):
     def __init__(self, databasename: str):
         """Initialize the access database connector"""
         super().__init__(databasename)
-        self.__connection_string = r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ='+self.databasename
+        odbc_conn_str = f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={databasename};"
+        self.__connection_string = f"access+pyodbc:///?odbc_connect={odbc_conn_str}"
         print(f"\nDatabase: {self.databasename}")
 
         try:
-            self.__connection = py1.connect(self.__connection_string)
-            self.cursor = self.__connection.cursor()
+            # Create SQLAlchemy engine
+            self.engine = sa_create_engine(self.__connection_string)
+            self.metadata = sa_MetaData()
+            self.metadata.reflect(bind=self.engine)
+        except sa_OperationalError as e:
+            print("Connection error:", e)
+        except sa_ProgrammingError as e:
+            print("SQL error:", e)
         except py1.DatabaseError:
             raise pyo_DatabaseError
         except py1.DataError:
@@ -33,4 +68,12 @@ class SQLDB_Access(SQLDB):
             raise Exception
 
     def close(self) -> None:
-        self.__connection.close()
+        # self.__connection.close()
+        if self.engine:
+            self.engine.dispose()
+            self.engine = None
+
+    def get_table_definition(self, table_name:str) -> sa_Table:
+        """use reflection to get table definition from database engine"""
+        return sa_Table(table_name, self.metadata, autoload_with = self.engine)
+    

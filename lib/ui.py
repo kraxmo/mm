@@ -9,7 +9,7 @@ class UI:
     INDENT_LEVEL_05 = '         -+ '
     
     @classmethod
-    def get_input(self, action_prompt: str, response_option: str = None, response_exception: Exception = None):
+    def get_input(self, action_prompt: str, response_option: str = None, response_exception: Exception = None) -> str:
         if response_option is None:
             response_option = "~@~"
             
@@ -25,7 +25,7 @@ class UI:
         return value.upper()    # force uppercase values
     
     @classmethod
-    def get_numeric_input(self, action_prompt: str, response_prefix: str = "", response_option: str = "~@~", response_exception: Exception = Exception):
+    def get_numeric_input(self, action_prompt: str, response_prefix: str = "", response_option: str = "~@~", response_exception: Exception = Exception) -> int:
         while True:
             try:
                 value: str = self.get_input(action_prompt, response_option, response_exception)
@@ -35,7 +35,7 @@ class UI:
                 continue
 
     @classmethod
-    def output_separator_line(self, value: str, newlinebefore: bool = False):
+    def output_separator_line(self, value: str, newlinebefore: bool = False) -> None:
         newline: str = ''
         if newlinebefore == True:
             newline = '\n'
@@ -43,5 +43,5 @@ class UI:
         self.output(f"{newline}{value*self.SEPARATOR_LINE_LENGTH}")
     
     @classmethod
-    def output(self, message):
+    def output(self, message) -> None:
         print(message)

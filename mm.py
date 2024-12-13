@@ -1,18 +1,21 @@
 #mm.py
 
-import abc
+from abc import(
+    ABCMeta,
+    abstractmethod,
+)
 import lib.combatmodel as cm1
 from lib.dice import Dice
 import lib.ui as ui1
 
 EXIT_TO_MENU = "@@"
 
-class Action(metaclass=abc.ABCMeta):
+class Action(metaclass=ABCMeta):
     def __init__(self, code, label):
         self.code = code
         self.label = label
 
-    @abc.abstractmethod
+    @abstractmethod
     def process(self, ui, encounter):
         pass
 
@@ -185,10 +188,12 @@ class SetInitiativeAction(Action):
     def process(self, ui, encounter):
         return process_set_initiative(ui, encounter)
     
-def get_input(ui, action_prompt, response_option = EXIT_TO_MENU, response_exception = ExitToMenuException):
+def get_input(ui, action_prompt, response_option = EXIT_TO_MENU, response_exception = ExitToMenuException) -> str:
+    """get input from keyboard"""
     return ui.get_input(action_prompt, response_option, response_exception)
     
-def get_numeric_input(ui, action_prompt, response_prefix='', response_option = EXIT_TO_MENU, response_exception = ExitToMenuException):
+def get_numeric_input(ui, action_prompt, response_prefix='', response_option = EXIT_TO_MENU, response_exception = ExitToMenuException) -> int:
+    """get numeric input from keyboard"""
     return ui.get_numeric_input(action_prompt, response_prefix, response_option, response_exception)
 
 def find_next_defender(ui, encounter, attacker) -> cm1.Combatant:
@@ -337,6 +342,7 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             break
 
 def get_defenders(ui, encounter, attacker) -> list:
+    """get a list of defenders"""
     defenders = []
     special_attack_defenders_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited defenders by abbrseq and/or #group: "
     special_attack_defenders_raw = ''
@@ -447,6 +453,7 @@ def is_negative_number_digit(n: str) -> bool:
         return False
 
 def log_hit_action(ui, encounter, attacker, defender, damage, xp_total, xp_earned, message):
+    """write hit data activity to log"""
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, xp_total, xp_earned, message+' BEFORE')
     defender.take_damage(damage)
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
@@ -522,6 +529,7 @@ def process_attack_end(ui, encounter) -> None:
     ui.output_separator_line('-', True)
 
 def process_attack_regular(ui, encounter, attacker) -> None:
+    """process regular (non-special) attack"""
     if (defender := find_next_defender(ui, encounter, attacker)) == None:
         encounter.initiative = encounter.INITIATIVE_NONE
         return
