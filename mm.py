@@ -397,7 +397,7 @@ def get_defenders(ui, encounter, attacker) -> list:
     special_attack_groups = [group[1:] for group in special_attack_defenders if group[0:1] == '#']
     
     # append unique group defenders to defender list
-    [special_attack_defenders.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_defenders)]
+    [special_attack_defenders.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_defenders) and (combatant.is_alive())]
 
     # get defenders (ignoring groups)
     [defenders.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_defenders]
