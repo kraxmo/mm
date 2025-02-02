@@ -23,13 +23,14 @@ from pyodbc import (
 )
 from lib.sqldb import SQLDB
 from sqlalchemy import (
-    create_engine as sa_create_engine, 
-    delete        as sa_delete,
-    insert        as sa_insert,
-    MetaData      as sa_MetaData, 
-    select        as sa_select,
-    Table         as sa_Table, 
-    update        as sa_update,
+    and_             as sa_and,
+    create_engine    as sa_create_engine, 
+    delete           as sa_delete,
+    insert           as sa_insert,
+    MetaData         as sa_MetaData, 
+    select           as sa_select,
+    Table            as sa_Table, 
+    update           as sa_update,
 )
 
 from sqlalchemy.exc import (

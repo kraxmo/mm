@@ -11,6 +11,7 @@ import lib.ui as ui1
 EXIT_TO_MENU = "@@"
 
 class Action(metaclass=ABCMeta):
+    """Abstract class for Actions"""
     def __init__(self, code, label):
         self.code = code
         self.label = label
@@ -197,7 +198,16 @@ def get_numeric_input(ui, action_prompt, response_prefix='', response_option = E
     return ui.get_numeric_input(action_prompt, response_prefix, response_option, response_exception)
 
 def find_next_defender(ui, encounter, attacker) -> cm1.Combatant:
-    """find next available defender"""
+    """find next available defender
+    
+    Args:
+        ui: user interface
+        encounter: current encounter
+        attacker: current attacker
+        
+    Returns:
+        defender: next Combatant defender
+    """
     defender_abbrseq = ''
     while defender_abbrseq == '':
         if len(attacker.defender_abbrseq) == 0:
@@ -257,7 +267,12 @@ def find_next_defender(ui, encounter, attacker) -> cm1.Combatant:
             return None
 
 def get_all_combatants_initiative(ui, encounter) -> None:
-    """get initiative for all combatants"""
+    """get initiative for all combatants
+    
+    Args:
+        ui: user interface
+        encounter: current Encounter
+    """
     if encounter.round == 1:
         if len(get_input(ui, f'Roll initiative? (<Enter> for Yes, N for No) ')) > 0:
             encounter.sort_combatants_by_initiative()
@@ -295,7 +310,13 @@ def get_all_combatants_initiative(ui, encounter) -> None:
     return
 
 def get_combatant_initiative(ui, encounter, combatant) -> None:
-    """get combatant initiative values"""
+    """get combatant initiative values
+    
+    Args:
+        ui: user interface
+        encounter: current Encounter
+        combatant: current Combatant
+    """
     initiative_prompt = f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative? "
     if combatant.initiative > 0:
         initiative_prompt += f"(<Enter> for previous value {combatant.initiative}) "
@@ -342,7 +363,16 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
             break
 
 def get_defenders(ui, encounter, attacker) -> list:
-    """get a list of defenders"""
+    """get a list of defenders
+    
+    Args:
+        ui: user interface
+        encounter: current Encounter
+        attacker: current Combatant
+        
+    Returns:
+        defenders: list of Combatant defenders
+    """
     defenders = []
     special_attack_defenders_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited defenders by abbrseq and/or #group: "
     special_attack_defenders_raw = ''
@@ -405,7 +435,16 @@ def get_defenders(ui, encounter, attacker) -> list:
     return defenders
 
 def get_to_hit_roll(ui, encounter, combatant) -> int:
-    """get to-hit roll value"""
+    """get to-hit roll value
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+        combatant: current Combatant
+        
+    returns:
+        to_hit_roll: int value of to-hit roll
+    """
     message = f"{ui.INDENT_LEVEL_02}Enter 'To Hit' d{encounter.TO_HIT_DIE} result: ("
     if not combatant.is_player_character():
         message += "<Enter> for autoroll, "
@@ -434,7 +473,11 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
     return to_hit_roll
     
 def initialize_round(ui, encounter) -> None:
-    """initialize round for attacks"""
+    """initialize round for attacks
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     ui.output(encounter.format_encounter())
     ui.output(encounter.format_combatants())
 
@@ -445,22 +488,45 @@ def initialize_round(ui, encounter) -> None:
     encounter.combatant_attack_number = 1
     
 def is_negative_number_digit(n: str) -> bool:
-    """check for negative number in passed string value"""
+    """check for negative number in passed string value
+    
+    args:
+        n: string value to check for negative number
+    returns:
+        True if negative number, False otherwise
+    """
     try:
         int(n)
         return True
     except ValueError:
         return False
 
-def log_hit_action(ui, encounter, attacker, defender, damage, xp_total, xp_earned, message):
-    """write hit data activity to log"""
+def log_hit_action(encounter, attacker, defender, damage, xp_total, xp_earned, message) -> None:
+    """write hit data activity to log
+    
+    args:
+        encounter: current Encounter
+        attacker: current Combatant attacker
+        defender: current Combatant defender
+        damage: int value of damage
+        xp_total: int value of defender's total xp
+        xp_earned: int value of defender's earned xp
+        message: string message to log
+    """
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, xp_total, xp_earned, message+' BEFORE')
     defender.take_damage(damage)
     encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
-    encounter.data.update_combatant_hit_points(defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    encounter.data.update_combatant_hit_points(defender.combattype, defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
 
 def process_attack_sequence(ui, encounter) -> bool:
-    """process each attack: Return True for additional post-attacks check or False for no post-attack checks"""
+    """process each attack: Return True for additional post-attacks check or False for no post-attack checks
+    
+    Args:
+        ui: user interface
+        encounter: current Encounter
+    returns:
+        True if additional post-attacks check, False otherwise
+    """
     if (attacker := encounter.find_next_attacker()) == None:
         encounter.initiative = encounter.INITIATIVE_NONE
         return False
@@ -523,13 +589,24 @@ def process_attack_sequence(ui, encounter) -> bool:
         return False
 
 def process_attack_end(ui, encounter) -> None:
-    """process end of attack activities"""
+    """process end of attack activities
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     encounter.initiative -= 1
     encounter.combatant_attack_number = 1
     ui.output_separator_line('-', True)
 
 def process_attack_regular(ui, encounter, attacker) -> None:
-    """process regular (non-special) attack"""
+    """process regular (non-special) attack
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+        attacker: current Combatant
+    """
     if (defender := find_next_defender(ui, encounter, attacker)) == None:
         encounter.initiative = encounter.INITIATIVE_NONE
         return
@@ -551,7 +628,7 @@ def process_attack_regular(ui, encounter, attacker) -> None:
             message += " hit"
             
         damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_02}Enter {message} damage: ')
-        log_hit_action(ui, encounter, attacker, defender, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message)
+        log_hit_action(encounter, attacker, defender, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message)
         ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
         if defender.is_alive() == False:
             encounter.foe_count -= 1
@@ -577,11 +654,17 @@ def process_attack_regular(ui, encounter, attacker) -> None:
         penalty_xp = get_numeric_input(ui, f"{ui.INDENT_LEVEL_05}Enter penalty xp (-number): ")
 
     message = encounter.format_attack_type() + " fumbled/cursed damage"
-    log_hit_action(ui, encounter, attacker, defender, damage, 0, penalty_xp, message)
+    log_hit_action(encounter, attacker, defender, damage, 0, penalty_xp, message)
     return
 
 def process_attack_special(ui, encounter, attacker) -> None:
-    """process special attack (spell, multiple defenders, multiple groups)"""
+    """process special attack (spell, multiple defenders, multiple groups)
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+        attacker: current Combatant
+    """
     special_attack_prompt = f"{ui.INDENT_LEVEL_03}Enter special attack name: "
     special_attack = get_input(ui, special_attack_prompt)
     
@@ -679,13 +762,18 @@ def process_attack_special(ui, encounter, attacker) -> None:
             earned_xp_base = encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp)
         
         earned_xp = int(earned_xp_base * saving_throw_modifier)
-        log_hit_action(ui, encounter, attacker, defender, damage, defender.xp, earned_xp, message)
+        log_hit_action(encounter, attacker, defender, damage, defender.xp, earned_xp, message)
         ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', str(damage))+f' points damage ({defender.hp} remaining)\n')
 
     return
 
 def process_set_initiative(ui, encounter) -> None:
-    """process setting current encounter's initiative"""
+    """process setting current encounter's initiative
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     raw_initiative = ''
     while len(raw_initiative) == 0:
         raw_initiative = get_input(ui, f'\nSet Initiative: (<Enter> for current: {encounter.initiative}, min/max: {encounter.INITIATIVE_MINIMUM}/{encounter.INITIATIVE_MAXIMUM}) ')
@@ -705,16 +793,31 @@ def process_set_initiative(ui, encounter) -> None:
     encounter.initiative = int(raw_initiative)
 
 def process_load_combatants(ui, encounter) -> None:
-    """load combatants into encounter"""
+    """load combatants into encounter
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     ui.output(encounter.format_encounter())
     encounter.load_combatants()
     
 def process_load_participants(ui, encounter) -> None:
-    """load participant data from database into encounter"""
+    """load participant data from database into encounter
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     encounter.load_participants()
 
 def process_round(ui, encounter) -> None:
-    """process round for each combatant"""
+    """process round for each combatant
+    
+    args:
+        ui: user interface
+        encounter: current Encounter
+    """
     continue_attack_prompt = f'Continue attacking? (<Enter> for Yes, N for No) '
     while True:
         initialize_round(ui, encounter)

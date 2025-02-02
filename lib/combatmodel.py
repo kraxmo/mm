@@ -114,7 +114,22 @@ class Combatant():
         self.regenerationround: int = 0
         
     def calculate_hitpoints(self, hitdicetypecode: str, hitdie: int, hitdice: int, hitdicemin: int, hitdicemax: int, hitdicemodifier: int, hitdievalue: int, hitpointstart: int, hitpointmin: int, hitpointmax: int) -> int:
-        """calculate hit points based on variable hit point rules"""
+        """calculate hit points based on variable hit point rules
+        
+        args:
+            hitdicetypecode: str
+            hitdie: int
+            hitdice: int
+            hitdicemin: int
+            hitdicemax: int
+            hitdicemodifier: int
+            hitdievalue: int
+            hitpointstart: int
+            hitpointmin: int
+            hitpointmax: int
+        returns:
+            hitpoints: int
+        """
         DIE_FIXED                 = 'DF'   # Die Fixed
         DIE_FIXED_POINTS_FIXED    = 'DFPF' # Die Fixed Points Fixed
         DIE_FIXED_POINTS_VARIABLE = 'DFPV' # Die Fixed Points Variable
@@ -162,11 +177,19 @@ class Combatant():
         return hitpoints
 
     def can_attack(self) -> bool:
-        """check if combatant can attack"""
+        """check if combatant can attack
+        
+        returns:
+            bool: True if combatant can attack, False otherwise
+        """
         return self.hp > 0
 
     def format_charactertype(self) -> str:
-        """format class information"""
+        """format charactor type information
+        
+        returns:
+            str: formatted character type information
+        """
         if self.is_player_character():
             charactertype: str  = "Player Character"
         elif self.is_non_player_character():
@@ -177,13 +200,21 @@ class Combatant():
         return charactertype
 
     def format_classtype(self) -> str:
-        """format class information"""
+        """format class type information
+        
+        returns:
+            str: formatted class type information
+        """
         classtypes: list = [self.CLASSTYPE.get(name) for name in self.classtype.split(',')]
         classtype: str   = ','.join(classname for classname in classtypes) 
         return classtype
 
     def format_damage_per_attack(self) -> str:
-        """format damage per attack information"""
+        """format damage per attack information
+        
+        returns:
+            str: formatted damage per attack information
+        """
         damage: str = ''
         if self.damageperattack:
             damage += f"{ui1.UI.INDENT_LEVEL_03}Damage Per Attack:"
@@ -194,7 +225,11 @@ class Combatant():
         return damage
 
     def format_notes(self) -> str:
-        """format notes information"""
+        """format notes information
+        
+        returns:
+            str: formatted notes information
+        """
         notes: str  = ''
         if self.notes:
             notes += ui1.UI.INDENT_LEVEL_03 + 'Notes:'
@@ -205,7 +240,11 @@ class Combatant():
         return notes
 
     def format_saving_throw(self) -> str:
-        """format special attack information"""
+        """format special attack information
+        
+        returns:
+            str: formatted special attack information
+        """
         savingthrow: str  = f'{ui1.UI.INDENT_LEVEL_03} Saving Throw:'
         savingthrow += ('\n' + ui1.UI.INDENT_LEVEL_04).join(self.specialattack.lstrip().split('|'))
         savingthrow += '\n'
@@ -213,7 +252,10 @@ class Combatant():
         return savingthrow
 
     def format_special_attacks(self) -> str:
-        """format special attack information"""
+        """format special attack information
+        
+        returns:
+            str: formatted special attack information"""
         specialattack: str  = ''
         if (self.specialattack == None) or (len(str(self.specialattack)) == 0):
             pass
@@ -226,7 +268,11 @@ class Combatant():
         return specialattack+self.format_damage_per_attack()
 
     def format_special_defense(self) -> str:
-        """format special defense information"""
+        """format special defense information
+        
+        returns:
+            str: formatted special defense information
+        """
         specialdefense: str  = ''
         if (self.specialdefense == None) or (len(str(self.specialdefense)) == 0):
             pass
@@ -239,7 +285,13 @@ class Combatant():
         return specialdefense
 
     def get_level(self, level) -> list:
-        """get level of each class"""
+        """get level of each class
+        
+        args:
+            level: str
+        returns:
+            list: list of levels for each class
+    """
         if level:
             return list(l for l in level.split(','))
 
@@ -265,38 +317,78 @@ class Combatant():
     #     return attacks
 
     def is_active(self) -> bool:
-        """is combatant active?"""
+        """is combatant active?
+        
+        returns:
+            bool: True if combatant is active, False otherwise
+        """
         return ( self.initiative >= Encounter.INITIATIVE_ACTIVE_MINIMUM ) and (self.can_attack())
 
     def is_inactive(self) -> bool:
-        """is combatant inactive?"""
+        """is combatant inactive?
+        
+        returns:
+            bool: True if combatant is inactive, False otherwise
+        """
         return ( self.initiative < Encounter.INITIATIVE_ACTIVE_MINIMUM )
 
     def is_alive(self) -> bool:
-        """check if combatant is alive"""
+        """check if combatant is alive
+        
+        returns:
+            bool: True if combatant is alive, False otherwise
+        """
         return not self.is_dead()
     
     def is_dead(self) -> bool:
-        """check if combatant is dead"""
+        """check if combatant is dead
+        
+        returns:
+            bool: True if combatant is dead, False otherwise
+        """
         if self.is_monster():
             return self.hp <= 0
         else:
             return self.hp <= -10
 
     def is_dungeon_master(self) -> bool:
+        """check if combatant is dungeon master
+        
+        returns:
+            bool: True if combatant is dungeon master, False otherwise
+        """
         return self.abbr == self.DUNGEON_MASTER
     
     def is_player_character(self) -> bool:
+        """check if combatant is a player character
+        
+        returns:
+            bool: True if combatant is a player character, False otherwise
+        """
         return self.charactertype == self.TYPE_PLAYER_CHARACTER
 
     def is_non_player_character(self) -> bool:
+        """check if combatant is a non-player character
+        
+        returns:
+            bool: True if combatant is a non-player character, False otherwise
+        """
         return self.charactertype == self.TYPE_NON_PLAYER_CHARACTER
 
     def is_monster(self) -> bool:
+        """check if combatant is a monster
+        
+        returns:
+            bool: True if combatant is a monster, False otherwise
+        """
         return self.charactertype == self.TYPE_MONSTER
     
     def is_spellcaster(self) -> bool:
-        """check if combatant could be a spell caster"""
+        """check if combatant could be a spell caster
+        
+        returns:
+            bool: True if combatant could be a spell caster, False otherwise
+        """
         for classtype in self.ClassType.split(','):
             if classtype in self.CLASSTYPE_SPELLCASTER:
                 return True
@@ -304,11 +396,19 @@ class Combatant():
         return False
 
     def is_unconscious(self) -> bool:
-        """check if combatant is unconscious"""
+        """check if combatant is unconscious
+        
+        returns:
+            bool: True if combatant is unconscious, False otherwise
+        """
         return -10 < self.hp <= 0
     
     def load_participant_values(self, **kwargs) -> None:
-        """load participant key-valued pairs into member variables"""
+        """load participant key-valued pairs into member variables
+        
+        args:
+            kwargs: dict of participant key-valued pairs
+        """
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -319,7 +419,11 @@ class Combatant():
             self.hp = self.hpmax
 
     def take_damage(self, damage: int) -> None:
-        """record damage taken"""
+        """record damage taken
+        
+        args:
+            damage: int
+        """
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
@@ -329,7 +433,15 @@ class Combatant():
             self.hp = self.hpmax
 
     def was_hit_successful(self, hitroll: int, defenderarmorclass: int, defensemodifier: int) -> bool:
-        """determine 'to hit' value"""
+        """determine 'to hit' value
+        
+        args:
+            hitroll: int
+            defenderarmorclass: int
+            defensemodifier: int
+        returns:
+            bool: True if hit was successful, False otherwise
+        """
         if hitroll >= (self.thac0 - defenderarmorclass + defensemodifier - self.attackmodifier):
             return True
         else:
@@ -373,7 +485,16 @@ class Encounter():
         self.load_saving_throws()
 
     def calculate_earned_xp(self, originalhp: int, hp: int, damage: int, xp: int) -> int:
-        """calculate experience points earned based upon total hit points and damage inflicted"""
+        """calculate experience points earned based upon total hit points and damage inflicted
+        
+        args:
+            originalhp: int
+            hp: int
+            damage: int
+            xp: int
+        returns:
+            int: experience points earned
+        """
         if damage > hp:
             value: int = hp
         else:
@@ -383,7 +504,7 @@ class Encounter():
         return returnvalue
     
     def check_duplicate_initiative(self) -> None:
-        """check for duplicate initiative and adjust"""
+        """check for duplicate initiative and adjust if necessary"""
         self.sort_combatants_by_initiative()
 
         # Detect duplicate initiative and esequence
@@ -397,7 +518,13 @@ class Encounter():
         self.sort_combatants_by_initiative()
             
     def count_combatants(self, combattype: str) -> int:
-        """count number of available combatants"""
+        """count number of available combatants
+        
+        args:
+            combattype: str
+        returns:
+            int: number of available combatants
+        """
         combatant_count: int = 0
         for combatant in self.combatants:
             if combatant.abbr == Combatant.DUNGEON_MASTER:
@@ -426,7 +553,13 @@ class Encounter():
                 self.combatants.remove(combatant)
 
     def find_combatant(self, abbrseq) -> Combatant:
-        """find combatant using abbrseq key"""
+        """find combatant using abbrseq key
+        
+        args:
+            abbrseq: str
+        returns:
+            Combatant: combatant object
+        """
         for combatant in self.combatants:
             if combatant.abbrseq == abbrseq:
                 return Combatant
@@ -434,7 +567,11 @@ class Encounter():
         return None
     
     def find_next_attacker(self) -> Combatant:
-        """find next available attacker"""
+        """find next available attacker
+        
+        returns:
+            Combatant: attacker combatant object
+        """
         for attacker in self.combatants:
             # Exclude if attacker's initiative > event's
             if attacker.initiative > self.initiative:
@@ -461,12 +598,20 @@ class Encounter():
             return attacker
 
     def format_attack_type(self) -> str:
-        """format attack type"""
+        """format attack type
+        
+        returns:
+            str: formatted attack type
+        """
         message: str = f"{'Missile' if self.ismissileattack else 'Melee'}"
         return message
 
     def format_combatants(self) -> str:
-        """format combatant information"""
+        """format combatant information
+        
+        returns:
+            str: formatted combatant information
+        """
         SEPARATOR_LINE_LENGTH = 103
         SIZE = {"S": "SMALL", "M": "MEDIUM", "L": "LARGE"}
         
@@ -491,7 +636,11 @@ class Encounter():
         return message
     
     def format_encounter(self) -> str:
-        """format encounter information"""
+        """format encounter information
+        
+        returns:
+            str: formatted encounter information
+        """
         message: str = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
         return message
 
@@ -519,6 +668,16 @@ class Encounter():
             self.combatants.append(preparedcombatant)
 
     def get_saving_throw(self, savingthrowclasstype: str, savingthrowlevel: int, savingthrowlevelpdm: int, attacktype: str):
+        """get saving throw value
+        
+        args:
+            savingthrowclasstype: str
+            savingthrowlevel: int
+            savingthrowlevelpdm: int
+            attacktype: str
+        returns:
+            int: saving throw value
+        """
         savingthrowvalue: int = 0
         for savingthrow in self.savingthrows:
             if savingthrow.classtype == savingthrowclasstype:
@@ -534,7 +693,13 @@ class Encounter():
         return savingthrowvalue
             
     def is_combatant(self, abbrseq: str) -> bool:
-        """check if passed abbrseq key is in the active combatant list"""
+        """check if passed abbrseq key is in the active combatant list
+        
+        args:
+            abbrseq: str
+        returns:
+            bool: True if abbrseq key is in the active combatant list, False otherwise
+        """
         for combatant in self.combatants:
             if combatant.abbrseq == abbrseq:
                 return True
@@ -550,7 +715,7 @@ class Encounter():
         for combatant in self.combatants:
             # update FOE combatants hit points
             if combatant.combattype == self.COMBATTYPE_FOE:
-                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+                self.data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
             # save combatant initiative (if exists)
             try:
@@ -597,7 +762,11 @@ class Encounter():
         self.prepare_next_round(True)
         
     def prepare_next_round(self, reset: bool = None) -> None:
-        """prepare next round for attack"""
+        """prepare next round for attack
+        
+        args:
+            reset: bool
+        """
         if reset is None:
             reset = False
         
@@ -631,7 +800,11 @@ class Encounter():
                 self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, 0, 0, 0, 'regenerate hit point AFTER')
 
     def roll_nonplayer_initiative(self) -> int:
-        """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])"""
+        """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])
+        
+        returns:
+            int: initiative value
+        """
         return Dice.roll_die(self.INITIATIVE_DIE_MAJOR) * 1000 + Dice.roll_die(self.INITIATIVE_DIE_MINOR)
 
     def sort_combatants_by_initiative(self) -> None:

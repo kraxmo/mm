@@ -10,8 +10,18 @@ class UI:
     
     @classmethod
     def get_input(self, action_prompt: str, response_option: str = None, response_exception: Exception = None) -> str:
+        """Get input from user
+        
+        Args:
+            action_prompt (str): Prompt message to display to user
+            response_option (str): Response option to raise exception
+            response_exception (Exception): Exception to raise if response_option found in input
+            
+        Returns:
+            str: User input value
+        """
         if response_option is None:
-            response_option = "~@~"
+            response_option = "~@~"   # default response option
             
         if response_exception is None:
             response_exception = Exception
@@ -19,13 +29,24 @@ class UI:
         value: str = input(action_prompt)
         
         # If response_option specified, raise response error
-        if value.find(response_option) > -1:
+        if not value.find(response_option):
             raise response_exception
     
         return value.upper()    # force uppercase values
     
     @classmethod
     def get_numeric_input(self, action_prompt: str, response_prefix: str = "", response_option: str = "~@~", response_exception: Exception = Exception) -> int:
+        """Get numeric input from user
+        
+        Args:
+            action_prompt (str): Prompt message to display to user
+            response_prefix (str): Prefix message to display to user
+            response_option (str): Response option to raise exception
+            response_exception (Exception): Exception to raise if response_option found in input
+            
+        Returns:
+            int: User numeric input value
+        """
         while True:
             try:
                 value: str = self.get_input(action_prompt, response_option, response_exception)
@@ -36,6 +57,7 @@ class UI:
 
     @classmethod
     def output_separator_line(self, value: str, newlinebefore: bool = False) -> None:
+        """Send separator line to output"""
         newline: str = ''
         if newlinebefore == True:
             newline = '\n'
@@ -44,4 +66,5 @@ class UI:
     
     @classmethod
     def output(self, message) -> None:
+        """Send message to specified output device"""
         print(message)

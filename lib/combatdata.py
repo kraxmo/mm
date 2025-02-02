@@ -22,13 +22,19 @@ class CombatData():
     def delete_dead_foes(self) -> None:
         """delete dead foe combatants"""
         table = self.db.get_table_definition('Combatant')
-        stmt = db1.sa_delete(table).where(table.c.CombatType == 'FOE' and table.c.hp <= 0)
+        stmt = db1.sa_delete(table).where(db1.sa_and(table.c.CombatType == 'FOE', table.c.hp <= 0))
         with self.db.engine.connect() as conn:
             conn.execute(stmt)
             conn.commit()
 
     def load_sql(self, table_name:str) -> dict:
-        """load sql data into a dictionary"""
+        """load sql data into a dictionary
+        
+        args:
+            table_name: name of table to load data from
+        
+        return: dictionary of data
+        """
 
         table = self.db.get_table_definition(table_name)
         data_dict = {}
@@ -65,7 +71,30 @@ class CombatData():
         self.savingthrows: dict = self.load_sql('SavingThrow')
 
     def log_action(self, encounter: int, round: int, Attacker_type: str, Attacker_Abbr: str, Attacker_seq: int, Attacker_group:str, Attacker_initiative: int, Attacker_attack_number: int, Defender_type: str, Defender_Abbr: str, Defender_seq: int, Defender_group: str, Defender_initiative: int, Defender_hp_max: int, Defender_hp: int, Defender_damage: int, xp_total: int, xp_earned: int, notes: str) -> None:
-        """insert action values into database log table"""
+        """insert action values into database log table
+        
+        args:
+            encounter: encounter number
+            round: round number
+            Attacker_type: type of attacker
+            Attacker_Abbr: attacker abbreviation
+            Attacker_seq: attacker sequence
+            Attacker_group: attacker group
+            Attacker_initiative: attacker initiative
+            Attacker_attack_number: attacker attack number
+            Defender_type: type of defender
+            Defender_Abbr: defender abbreviation
+            Defender_seq: defender sequence
+            Defender_group: defender group
+            Defender_initiative: defender initiative
+            Defender_hp_max: defender max hit points
+            Defender_hp: defender hit points
+            Defender_damage: defender damage
+            xp_total: total experience points
+            xp_earned: experience points earned
+            notes: notes
+        """
+        
         table = self.db.get_table_definition('Log')
         stmt: str = db1.sa_insert(table).values(
             encounter              = encounter, 
@@ -94,13 +123,33 @@ class CombatData():
             conn.commit()
         
     def log_initiative(self, encounter: int, round: int, type: str, Abbr: str, seq: int, group:str, initiative: int, hp_original: int, hp: int) -> None:
-        """insert initiative values into database log table"""
+        """insert initiative values into database log table
+        
+        args:
+            encounter: encounter number
+            round: round number
+            type: type of combatant
+            Abbr: combatant abbreviation
+            seq: combatant sequence
+            group: combatant group
+            initiative: combatant initiative
+            hp_original: combatant original hit points
+            hp: combatant hit points
+        """
         self.log_action(encounter, round, type, Abbr, seq, group, initiative, 0, 'N/A', 'N/A', 0, 'N/A', 0, hp_original, hp, 0, 0, 0, 'initiative')
 
-    def update_combatant_hit_points(self, Abbr: str, seq: int, hpmax: int, hp: int) -> None:
-        """update combatant hit points"""
+    def update_combatant_hit_points(self, combattype: str, abbr: str, seq: int, hpmax: int, hp: int) -> None:
+        """update combatant hit points
+        
+        args:
+            combattype: combatant type
+            abbr: combatant abbreviation
+            seq: combatant sequence
+            hpmax: combatant max hit points
+            hp: combatant hit points
+        """
         table = self.db.get_table_definition('Combatant')
-        stmt = db1.sa_update(table).where(table.c.Abbr == Abbr and table.c.seq == seq).values(hp = hp, hpmax = hpmax)
+        stmt = db1.sa_update(table).where(db1.sa_and(table.c.CombatType == combattype, table.c.Abbr == abbr, table.c.seq == seq)).values(hp = hp, hpmax = hpmax)
         with self.db.engine.connect() as conn:
             conn.execute(stmt)
             conn.commit()
