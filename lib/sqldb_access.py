@@ -32,27 +32,40 @@ from sqlalchemy import (
     Table            as sa_Table, 
     update           as sa_update,
 )
-
 from sqlalchemy.exc import (
     OperationalError as sa_OperationalError,
     ProgrammingError as sa_ProgrammingError,
+)
+from sqlalchemy.ext.automap import automap_base;
+from sqlalchemy.orm import (
+    sessionmaker,
 )
 
 class SQLDB_Access(SQLDB):
     """A class to represent a class of sqldb for Microsoft Access"""
     
-    def __init__(self, databasename: str):
+    def __init__(self, databasename: str, uses_orm: bool, echo_sql: bool) -> None:
         """Initialize the access database connector"""
         super().__init__(databasename)
+        self.uses_orm = uses_orm
         odbc_conn_str = f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={databasename};"
         self.__connection_string = f"access+pyodbc:///?odbc_connect={odbc_conn_str}"
         print(f"\nDatabase: {self.databasename}")
 
         try:
             # Create SQLAlchemy engine
-            self.engine = sa_create_engine(self.__connection_string)
-            self.metadata = sa_MetaData()
-            self.metadata.reflect(bind=self.engine)
+            self.engine = sa_create_engine(self.__connection_string, echo=echo_sql)
+            
+            # Create ORM or Core connection
+            if self.uses_orm:
+                self.metadata = sa_MetaData()
+                self.base = automap_base(metadata=self.metadata)
+                self.base.prepare(autoload_with=self.engine, reflect=True)
+                Session = sessionmaker(bind=self.engine)
+                self.session = Session()
+            else:
+                self.metadata = sa_MetaData()
+                self.metadata.reflect(bind=self.engine)
         except sa_OperationalError as e:
             print("Connection error:", e)
         except sa_ProgrammingError as e:
@@ -69,12 +82,14 @@ class SQLDB_Access(SQLDB):
             raise Exception
 
     def close(self) -> None:
-        # self.__connection.close()
         if self.engine:
             self.engine.dispose()
             self.engine = None
 
     def get_table_definition(self, table_name:str) -> sa_Table:
         """use reflection to get table definition from database engine"""
-        return sa_Table(table_name, self.metadata, autoload_with = self.engine)
+        if self.uses_orm:
+            return getattr(self.base.classes, table_name)
+        else:
+            return sa_Table(table_name, self.metadata, autoload_with = self.engine)
     

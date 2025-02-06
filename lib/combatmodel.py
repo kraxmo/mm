@@ -644,11 +644,11 @@ class Encounter():
         message: str = f'\nEncounter: {self.encounter} | Round: {self.round} | Initiative: {self.initiative}'
         return message
 
-    def get_combatants(self) -> None:
+    def get_combatants(self) -> dict:
         """get combatants from participant database"""
-        self.combatants = []
         self.data.load_combatants()
         combatantdata: dict = self.data.combatants
+        combatants = []
         for combatant in combatantdata:
             abbr: str = combatantdata[combatant].get("Abbr")
             participant: str = self.data.participants.get(abbr)
@@ -665,7 +665,9 @@ class Encounter():
             preparedcombatant = Combatant(combattype, combatgroup, combatsequence, combathitpoints, combatinitiative, combatdamage, combatattackmodifier, combatdefensemodifier, **participant)
             
             # append combatant to combatants list
-            self.combatants.append(preparedcombatant)
+            combatants.append(preparedcombatant)
+            
+        return combatants
 
     def get_saving_throw(self, savingthrowclasstype: str, savingthrowlevel: int, savingthrowlevelpdm: int, attacktype: str):
         """get saving throw value
@@ -711,22 +713,25 @@ class Encounter():
         if len(self.combatants) > 0:
             combatant_saved_initiative: dict = {combatant.abbrseq: combatant.initiative for combatant in self.combatants}
             
-        self.get_combatants()
-        for combatant in self.combatants:
-            # update FOE combatants hit points
-            if combatant.combattype == self.COMBATTYPE_FOE:
-                self.data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+        self.combatants = self.get_combatants()
+        if self.combatants:
+            for combatant in self.combatants:
+                # update FOE combatants hit points
+                if combatant.combattype == self.COMBATTYPE_FOE:
+                    self.data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
-            # save combatant initiative (if exists)
-            try:
-                saved_initiative: int = combatant_saved_initiative[combatant.abbrseq]
-                if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
-                    combatant.initiative = saved_initiative
-            except:
-                # combatant does not exist
-                pass
+                # save combatant initiative (if exists)
+                try:
+                    saved_initiative: int = combatant_saved_initiative[combatant.abbrseq]
+                    if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
+                        combatant.initiative = saved_initiative
+                except:
+                    # combatant does not exist
+                    pass
 
-        ui1.UI.output(self.format_combatants())
+            ui1.UI.output(self.format_encounter())
+            ui1.UI.output(self.format_combatants())
+            
         ui1.UI.output(f'\nCombatants loaded: {len(self.combatants)}')
 
     def load_participants(self) -> None:

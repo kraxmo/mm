@@ -31,8 +31,11 @@ class ListCombatantsAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        ui.output(encounter.format_encounter())
-        ui.output(encounter.format_combatants())
+        if encounter.combatants:
+            ui.output(encounter.format_encounter())
+            ui.output(encounter.format_combatants())
+        else:
+            ui.output('\nNo combatants loaded')
         return
 
 class ListCombatantsInformation(Action):
@@ -43,28 +46,30 @@ class ListCombatantsInformation(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        ui.output(f"\nCombatant Information:")
-        for combatant in encounter.combatants:
-            if combatant.combattype != encounter.COMBATTYPE_FRIEND:
-                continue
-            
-            if combatant.is_monster():
-                continue
-            
-            special_attacks = combatant.format_special_attacks()
-            special_defense = combatant.format_special_defense()
-            notes           = combatant.format_notes()
-            if (len(special_attacks) + len(special_defense) + len(notes)) > 0:
-                ui.output(f"{ui.INDENT_LEVEL_02}{combatant.abbrseq}:")
-                if len(special_attacks) > 0:
-                    ui.output(f"{special_attacks}")
-                    
-                if len(special_defense) > 0:
-                    ui.output(f"{special_defense}")
-                    
-                if len(notes) > 0:
-                    ui.output(f"{notes}")
-
+        if encounter.combatants:
+            ui.output(f"\nCombatant Information:")
+            for combatant in encounter.combatants:
+                if combatant.combattype != encounter.COMBATTYPE_FRIEND:
+                    continue
+                
+                if combatant.is_monster():
+                    continue
+                
+                special_attacks = combatant.format_special_attacks()
+                special_defense = combatant.format_special_defense()
+                notes           = combatant.format_notes()
+                if (len(special_attacks) + len(special_defense) + len(notes)) > 0:
+                    ui.output(f"{ui.INDENT_LEVEL_02}{combatant.abbrseq}:")
+                    if len(special_attacks) > 0:
+                        ui.output(f"{special_attacks}")
+                        
+                    if len(special_defense) > 0:
+                        ui.output(f"{special_defense}")
+                        
+                    if len(notes) > 0:
+                        ui.output(f"{notes}")
+        else:
+            ui.output('\nNo combatants loaded')
         return
 
 class LoadCombatParticipantsAction(Action):
@@ -151,8 +156,11 @@ class NextEncounterAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        encounter.prepare_next_encounter()
-        ui.output(encounter.format_encounter())
+        if encounter.combatants:
+            encounter.prepare_next_encounter()
+            ui.output(encounter.format_encounter())
+        else:
+            ui.output('\nNo combatants loaded')
         return
 
 class NextAttackAction(Action):
@@ -163,8 +171,12 @@ class NextAttackAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        process_round(ui, encounter)
+        if encounter.combatants:
+            process_round(ui, encounter)
+        else:
+            ui.output('\nNo combatants loaded')
         return
+
 class QuitAction(Action):
     def __init__(self):
         super().__init__(99, 'Quit')
@@ -187,7 +199,11 @@ class SetInitiativeAction(Action):
         return f'{__class__.__name__}'
 
     def process(self, ui, encounter):
-        return process_set_initiative(ui, encounter)
+        if encounter.combatants:
+            process_set_initiative(ui, encounter)
+        else:
+            ui.output('\nNo combatants loaded')
+        return
     
 def get_input(ui, action_prompt, response_option = EXIT_TO_MENU, response_exception = ExitToMenuException) -> str:
     """get input from keyboard"""
@@ -799,7 +815,6 @@ def process_load_combatants(ui, encounter) -> None:
         ui: user interface
         encounter: current Encounter
     """
-    ui.output(encounter.format_encounter())
     encounter.load_combatants()
     
 def process_load_participants(ui, encounter) -> None:

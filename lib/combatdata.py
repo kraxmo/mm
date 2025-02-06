@@ -1,5 +1,6 @@
 #combatdata.py
 
+from datetime import datetime
 import configparser as cp1
 import lib.sqldb_access as db1
 
@@ -10,10 +11,13 @@ class CombatData():
         # get database reference
         config = cp1.ConfigParser()
         config.read(CONFIG_FILE)
-        connect_string = config['Database']['access_file']
+        config_key = 'Database'
+        connect_string = config[config_key]['access_file']
+        uses_orm       = config[config_key].getboolean('uses_orm')
+        echo_sql       = config[config_key].getboolean('echo_sql')
         
         # connect to database
-        self.db = db1.SQLDB_Access(connect_string)
+        self.db = db1.SQLDB_Access(connect_string, uses_orm, echo_sql)
 
     def close(self) -> None:
         """close database connection"""
@@ -21,11 +25,15 @@ class CombatData():
 
     def delete_dead_foes(self) -> None:
         """delete dead foe combatants"""
-        table = self.db.get_table_definition('Combatant')
-        stmt = db1.sa_delete(table).where(db1.sa_and(table.c.CombatType == 'FOE', table.c.hp <= 0))
-        with self.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        combatant = self.db.get_table_definition('Combatant')
+        if self.db.uses_orm:
+            if (self.db.session.query(combatant).filter(combatant.CombatType == 'FOE', combatant.hp <= 0).delete()):
+                self.db.session.commit()
+        else:
+            stmt = db1.sa_delete(combatant).where(combatant.c.CombatType == 'FOE' and combatant.c.hp <= 0)
+            with self.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
 
     def load_sql(self, table_name:str) -> dict:
         """load sql data into a dictionary
@@ -35,29 +43,44 @@ class CombatData():
         
         return: dictionary of data
         """
-
         table = self.db.get_table_definition(table_name)
         data_dict = {}
         
         # Query the data and load into a dictionary
-        with self.db.engine.connect() as conn:
+        if self.db.uses_orm:
             if table_name == 'Combatant':
-                results = conn.execute(db1.sa_select(table).where(table.c.isactive == True))   # select all rows from table
+                results = self.db.session.query(table).filter(table.isactive == True).all()      # select filtered rows from table
             else:
-                results = conn.execute(db1.sa_select(table))   # select all rows from table
-            
+                results = self.db.session.query(table).all()                                       # select all rows from table
+
             # Iterate over results and populate the dictionary
             for row in results:
-                row_dict = dict(row._mapping)   # build dictionary keys using row columns
+                row_dict = row.__dict__         # build dictionary keys using row columns
                 if table_name == 'Combatant':
                     data_dict[row.Abbr + str(row.seq)] = row_dict
                 elif table_name == 'SavingThrow':
                     data_dict[str(row.ClassType) + '-' + str(row.Level)] = row_dict
                 elif table_name == 'Participant':
                     data_dict[row.Abbr] = row_dict
-    
+        else:
+            results = None
+            with self.db.engine.connect() as conn:
+                if table_name == 'Combatant':
+                    results = conn.execute(db1.sa_select(table).where(table.c.isactive == True))   # select filtered rows from table
+                else:
+                    results = conn.execute(db1.sa_select(table))                                   # select all rows from table
+                    
+                for row in results:
+                    row_dict = dict(row._mapping)   # build dictionary keys using row columns
+                    if table_name == 'Combatant':
+                        data_dict[row.Abbr + str(row.seq)] = row_dict
+                    elif table_name == 'SavingThrow':
+                        data_dict[str(row.ClassType) + '-' + str(row.Level)] = row_dict
+                    elif table_name == 'Participant':
+                        data_dict[row.Abbr] = row_dict
+                
         return data_dict        
-    
+
     def load_combatants(self) -> None:
         """load encounter combatants"""
         self.combatants: dict = self.load_sql('Combatant')
@@ -96,31 +119,58 @@ class CombatData():
         """
         
         table = self.db.get_table_definition('Log')
-        stmt: str = db1.sa_insert(table).values(
-            encounter              = encounter, 
-            round                  = round, 
-            Attacker_type          = Attacker_type, 
-            Attacker_Abbr          = Attacker_Abbr,
-            Attacker_seq           = Attacker_seq,
-            Attacker_group         = Attacker_group,
-            Attacker_initiative    = Attacker_initiative,
-            Attacker_attack_number = Attacker_attack_number,
-            Defender_type          = Defender_type,
-            Defender_Abbr          = Defender_Abbr,
-            Defender_seq           = Defender_seq,
-            Defender_group         = Defender_group,
-            Defender_initiative    = Defender_initiative,
-            Defender_hp_max        = Defender_hp_max,
-            Defender_hp            = Defender_hp,
-            Defender_damage        = Defender_damage,
-            xp_total               = xp_total,
-            xp_earned              = xp_earned,
-            notes                  = notes
-        )
+        if self.db.uses_orm:
+            log = table(
+                logDate                = datetime.now(),
+                encounter              = encounter, 
+                round                  = round, 
+                Attacker_type          = Attacker_type, 
+                Attacker_Abbr          = Attacker_Abbr,
+                Attacker_seq           = Attacker_seq,
+                Attacker_group         = Attacker_group,
+                Attacker_initiative    = Attacker_initiative,
+                Attacker_attack_number = Attacker_attack_number,
+                Defender_type          = Defender_type,
+                Defender_Abbr          = Defender_Abbr,
+                Defender_seq           = Defender_seq,
+                Defender_group         = Defender_group,
+                Defender_initiative    = Defender_initiative,
+                Defender_hp_max        = Defender_hp_max,
+                Defender_hp            = Defender_hp,
+                Defender_damage        = Defender_damage,
+                xp_total               = xp_total,
+                xp_earned              = xp_earned,
+                notes                  = notes
+            )
+            self.db.session.add(log)
+            self.db.session.commit()
+        else:
+            stmt: str = db1.sa_insert(table).values(
+                logDate                = datetime.now(),
+                encounter              = encounter, 
+                round                  = round, 
+                Attacker_type          = Attacker_type, 
+                Attacker_Abbr          = Attacker_Abbr,
+                Attacker_seq           = Attacker_seq,
+                Attacker_group         = Attacker_group,
+                Attacker_initiative    = Attacker_initiative,
+                Attacker_attack_number = Attacker_attack_number,
+                Defender_type          = Defender_type,
+                Defender_Abbr          = Defender_Abbr,
+                Defender_seq           = Defender_seq,
+                Defender_group         = Defender_group,
+                Defender_initiative    = Defender_initiative,
+                Defender_hp_max        = Defender_hp_max,
+                Defender_hp            = Defender_hp,
+                Defender_damage        = Defender_damage,
+                xp_total               = xp_total,
+                xp_earned              = xp_earned,
+                notes                  = notes
+            )
 
-        with self.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+            with self.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
         
     def log_initiative(self, encounter: int, round: int, type: str, Abbr: str, seq: int, group:str, initiative: int, hp_original: int, hp: int) -> None:
         """insert initiative values into database log table
@@ -149,7 +199,11 @@ class CombatData():
             hp: combatant hit points
         """
         table = self.db.get_table_definition('Combatant')
-        stmt = db1.sa_update(table).where(db1.sa_and(table.c.CombatType == combattype, table.c.Abbr == abbr, table.c.seq == seq)).values(hp = hp, hpmax = hpmax)
-        with self.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.db.uses_orm:
+            self.db.session.query(table).filter(table.CombatType == combattype, table.Abbr == abbr, table.seq == seq).update({table.hpmax: hpmax, table.hp: hp})
+            self.db.session.commit()
+        else:
+            stmt = db1.sa_update(table).where(db1.sa_and(table.c.CombatType == combattype, table.c.Abbr == abbr, table.c.seq == seq)).values(hp = hp, hpmax = hpmax)
+            with self.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()

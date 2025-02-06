@@ -21,16 +21,24 @@ class TestCombatData(TestCase):
         table = self.data.db.get_table_definition('Combatant')
         
         # disable all active Combatants (take all existing good combatants offline)
-        stmt = sa_update(table).values(isactive = False)
-        with self.data.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.data.db.uses_orm:
+            self.data.db.session.query(table).update({table.isactive: False})
+            self.data.db.session.commit()
+        else:
+            stmt = sa_update(table).values(isactive = False)
+            with self.data.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
         
         # delete all test Combatants
-        stmt = sa_delete(table).where(table.c.seq >= 99)
-        with self.data.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.data.db.uses_orm:
+            self.data.db.session.query(table).filter(table.seq >= 99).delete()
+            self.data.db.session.commit()
+        else:
+            stmt = sa_delete(table).where(table.c.seq >= 99)
+            with self.data.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
 
         # define test combatants
         combatants = [
@@ -47,29 +55,46 @@ class TestCombatData(TestCase):
         ]
 
         # add test combatants to database
-        with self.data.db.engine.connect() as conn:
+        if self.data.db.uses_orm:
             for combatant in combatants:
-                combattype = combatant['CombatType']
-                abbr = combatant['Abbr']
-                seq = combatant['seq']
-                group = combatant['group']
-                hpmax = combatant['hpmax']
-                hp = combatant['hp']
-                attackmodifier = combatant['attackmodifier']
-                defensemodifier = combatant['defensemodifier']
-                stmt: str = sa_insert(table).values(
-                    CombatType      = combattype,
-                    Abbr            = abbr,
-                    seq             = seq,
-                    group           = group,
-                    hpmax           = hpmax,
-                    hp              = hp,
-                    attackmodifier  = attackmodifier,
-                    defensemodifier = defensemodifier,
+                log = table(
+                    CombatType      = combatant['CombatType'],
+                    Abbr            = combatant['Abbr'],
+                    seq             = combatant['seq'],
+                    group           = combatant['group'],
+                    hpmax           = combatant['hpmax'],
+                    hp              = combatant['hp'],
+                    attackmodifier  = combatant['attackmodifier'],
+                    defensemodifier = combatant['defensemodifier'],
                 )
 
-                conn.execute(stmt)
-                conn.commit()
+                self.data.db.session.add(log)
+                # self.data.db.session.execute(table.insert().values(combatants))
+            self.data.db.session.commit()
+        else:
+            with self.data.db.engine.connect() as conn:
+                for combatant in combatants:
+                    combattype = combatant['CombatType']
+                    abbr = combatant['Abbr']
+                    seq = combatant['seq']
+                    group = combatant['group']
+                    hpmax = combatant['hpmax']
+                    hp = combatant['hp']
+                    attackmodifier = combatant['attackmodifier']
+                    defensemodifier = combatant['defensemodifier']
+                    stmt: str = sa_insert(table).values(
+                        CombatType      = combattype,
+                        Abbr            = abbr,
+                        seq             = seq,
+                        group           = group,
+                        hpmax           = hpmax,
+                        hp              = hp,
+                        attackmodifier  = attackmodifier,
+                        defensemodifier = defensemodifier,
+                    )
+
+                    conn.execute(stmt)
+                    conn.commit()
 
     @classmethod
     def tearDownClass(self):
@@ -78,22 +103,34 @@ class TestCombatData(TestCase):
         log_table = self.data.db.get_table_definition('Log')
         
         # delete all test Combatants
-        stmt = sa_delete(combatant_table).where(combatant_table.c.seq >= 99)
-        with self.data.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.data.db.uses_orm:
+            self.data.db.session.query(combatant_table).filter(combatant_table.seq >= 99).delete()
+            self.data.db.session.commit()
+        else:
+            stmt = sa_delete(combatant_table).where(combatant_table.c.seq >= 99)
+            with self.data.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
 
         # delete all test Logs
-        stmt = sa_delete(log_table).where(log_table.c.encounter == 9999999)
-        with self.data.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.data.db.uses_orm:
+            self.data.db.session.query(log_table).filter(log_table.encounter == 9999999).delete()
+            self.data.db.session.commit()
+        else:
+            stmt = sa_delete(log_table).where(log_table.c.encounter == 9999999)
+            with self.data.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
         
         # enable all active Combantants (place all existing good combatants online)
-        stmt = sa_update(combatant_table).values(isactive = True)
-        with self.data.db.engine.connect() as conn:
-            conn.execute(stmt)
-            conn.commit()
+        if self.data.db.uses_orm:
+            self.data.db.session.query(combatant_table).update({combatant_table.isactive: True})
+            self.data.db.session.commit()
+        else:
+            stmt = sa_update(combatant_table).values(isactive = True)
+            with self.data.db.engine.connect() as conn:
+                conn.execute(stmt)
+                conn.commit()
         
     def test_combatdata(self):
         self.assertIsInstance(self.data, CombatData)
@@ -119,8 +156,8 @@ class TestCombatData(TestCase):
         self.data.log_initiative(bignumber, bignumber, 'TEST', 'ALIEL', 99, 'TEST', bignumber, bignumber, bignumber)
     
     def test_update_combatant_hit_points(self):
-        self.data.update_combatant_hit_points('ALIEL', 99, 99, 99)
+        self.data.update_combatant_hit_points('FRIEND', 'ALIEL', 99, 99, 99)
         
     def test_delete_dead_foes(self):
-        self.data.update_combatant_hit_points('ANTG', 1, 99, 0)
+        self.data.update_combatant_hit_points('FOE', 'ANTG', 1, 99, 0)
         self.data.delete_dead_foes()
