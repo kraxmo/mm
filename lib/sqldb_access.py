@@ -60,7 +60,7 @@ class SQLDB_Access(SQLDB):
             if self.uses_orm:
                 self.metadata = sa_MetaData()
                 self.base = automap_base(metadata=self.metadata)
-                self.base.prepare(autoload_with=self.engine, reflect=True)
+                self.base.prepare(autoload_with=self.engine)
                 Session = sessionmaker(bind=self.engine)
                 self.session = Session()
             else:
