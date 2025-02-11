@@ -1,6 +1,6 @@
 #test_combatmodel.py
 
-import lib.sqldb_access as sa1
+import temp.sqldb_access as sa1
 from lib.combatmodel import(
     Combatant,
     Encounter,
