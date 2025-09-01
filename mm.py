@@ -59,7 +59,7 @@ class ListCombatantsInformation(Action):
                 special_defense = combatant.format_special_defense()
                 notes           = combatant.format_notes()
                 if (len(special_attacks) + len(special_defense) + len(notes)) > 0:
-                    ui.output(f"{ui.INDENT_LEVEL_02}{combatant.abbrseq}:")
+                    ui.output(f"{ui.INDENT_LEVEL_02}{combatant.typeabbrseq}:")
                     if len(special_attacks) > 0:
                         ui.output(f"{special_attacks}")
                         
@@ -95,6 +95,10 @@ class LoadCombatantsAction(Action):
         return 
 
 class MeleeManager():
+    @property
+    def config_file(self):
+        return r'C:\users\jkraxberger\pyproj\github\mm\config.ini'
+    
     def __init__(self):
         self.ui = ui1.UI
         self.ui.output('')
@@ -104,6 +108,7 @@ class MeleeManager():
         self.ui.output("Press '@@' at any input prompt to return to menu")
         self.ui.output_separator_line('=')
 
+        # get database reference
         self.encounter = cm1.Encounter()
         process_load_participants(self.ui, self.encounter)
         process_load_combatants(self.ui, self.encounter)
@@ -182,7 +187,7 @@ class QuitAction(Action):
         super().__init__(99, 'Quit')
 
     def process(self, ui, encounter):
-        encounter.data.close()
+        encounter.combat_data.close()
         raise QuitException
 
     def __str__(self):
@@ -204,7 +209,7 @@ class SetInitiativeAction(Action):
         else:
             ui.output('\nNo combatants loaded')
         return
-    
+
 def get_input(ui, action_prompt, response_option = EXIT_TO_MENU, response_exception = ExitToMenuException) -> str:
     """get input from keyboard"""
     return ui.get_input(action_prompt, response_option, response_exception)
@@ -224,62 +229,64 @@ def find_next_defender(ui, encounter, attacker) -> cm1.Combatant:
     Returns:
         defender: next Combatant defender
     """
-    defender_abbrseq = ''
-    while defender_abbrseq == '':
-        if len(attacker.defender_abbrseq) == 0:
-            message = f'{ui.INDENT_LEVEL_02}Who is {attacker.abbrseq} attacking? (abbrseq) '
+    defender_typeabbrseq = ''
+    while defender_typeabbrseq == '':
+        if len(attacker.defender_typeabbrseq):
+            message = f'{ui.INDENT_LEVEL_02}Is {attacker.typeabbrseq} attacking {attacker.defender_typeabbrseq}? (<Enter> for existing or type new typeabbrseq) '
         else:
-            message = f'{ui.INDENT_LEVEL_02}Is {attacker.abbrseq} attacking {attacker.defender_abbrseq}? (<Enter> for existing or type new abbrseq) '
-    
-        if len(defender_abbrseq := get_input(ui, message)) == 0:
+            message = f'{ui.INDENT_LEVEL_02}Who is {attacker.typeabbrseq} attacking? (typeabbrseq) '
+
+        # get defender typeabbrseq
+        if len(defender_typeabbrseq := get_input(ui, message)) == 0:
             # no defender inputted
-            if len(attacker.defender_abbrseq) == 0:
+            if len(attacker.defender_typeabbrseq) == 0:
                 # no previously entered defender
-                ui.output(f'{ui.INDENT_LEVEL_03}Please enter a defender abbrseq')
-                defender_abbrseq = ''
+                ui.output(f'{ui.INDENT_LEVEL_03}Please enter a defender typeabbrseq')
+                defender_typeabbrseq = ''
                 continue
             
-            defender_abbrseq = attacker.defender_abbrseq
+            defender_typeabbrseq = attacker.defender_typeabbrseq
             
-        elif defender_abbrseq == attacker.abbrseq:
-                ui.output(f'{ui.INDENT_LEVEL_03}{attacker.abbrseq} cannot self-attack. Try again')
-                defender_abbrseq = ''
+        elif defender_typeabbrseq == attacker.typeabbrseq:
+                ui.output(f'{ui.INDENT_LEVEL_03}{attacker.typeabbrseq} cannot self-attack. Try again')
+                defender_typeabbrseq = ''
                 continue
             
         else:
-            if encounter.is_combatant(defender_abbrseq) == False:
-                ui.output(f'{ui.INDENT_LEVEL_03}defender {defender_abbrseq} does not exist. Try again')
-                defender_abbrseq = ''
+            if encounter.is_combatant(defender_typeabbrseq) == False:
+                ui.output(f'{ui.INDENT_LEVEL_03}defender {defender_typeabbrseq} does not exist. Try again')
+                defender_typeabbrseq = ''
                 continue
         
-        defender_count = 0
+        # check if defender is in combatant list        
+        defender_count      = 0
         defender_is_invalid = False
-        defender_is_dead = False
+        defender_is_dead    = False
         for defender in encounter.combatants:
             defender_count += 1
-            if defender.abbrseq == defender_abbrseq:
+            if defender.typeabbrseq == defender_typeabbrseq:
                 if defender.combattype == attacker.combattype:
-                    if len(get_input(ui, f'{ui.INDENT_LEVEL_03}{attacker.abbrseq} and {defender.abbrseq} are both friends. Are you sure? (<Enter> for No, y for Yes) ')) == 0:
-                        defender_is_invalid = True
-                        attacker.defender_abbrseq = ''
-                        defender_abbrseq = ''
+                    if len(get_input(ui, f'{ui.INDENT_LEVEL_03}{attacker.typeabbrseq} and {defender.typeabbrseq} are both friends. Are you sure? (<Enter> for No, y for Yes) ')) == 0:
+                        defender_is_invalid       = True
+                        attacker.defender_typeabbrseq = ''
+                        defender_typeabbrseq          = ''
                         break
 
                 if defender.is_alive():
-                    attacker.defender_abbrseq = defender_abbrseq
+                    attacker.defender_typeabbrseq = defender_typeabbrseq
                     return defender
                 else:
                     defender_is_dead = True
-                    ui.output(f'{ui.INDENT_LEVEL_03}{defender.abbrseq} is dead')
-                    attacker.defender_abbrseq = ''
-                    defender_abbrseq = ''
+                    ui.output(f'{ui.INDENT_LEVEL_03}{defender.typeabbrseq} is dead')
+                    attacker.defender_typeabbrseq = ''
+                    defender_typeabbrseq = ''
 
                 break
 
         if defender_is_dead or defender_is_invalid:
             continue
             
-        if defender_count == len(encounter.combatants) and defender_abbrseq == '':
+        if defender_count == len(encounter.combatants) and defender_typeabbrseq == '':
             return None
 
 def get_all_combatants_initiative(ui, encounter) -> None:
@@ -308,7 +315,7 @@ def get_all_combatants_initiative(ui, encounter) -> None:
             get_combatant_initiative(ui, encounter, combatant)
         else:
             if (combatant.initiative >= encounter.INITIATIVE_ACTIVE_MINIMUM):
-                initiative_reroll = get_input(ui, f"{ui.INDENT_LEVEL_01}Re-roll {combatant.abbrseq}'s {combatant.initiative} initiative? (<Enter> for No, A for Auto-roll, M for Manual-entry) ")
+                initiative_reroll = get_input(ui, f"{ui.INDENT_LEVEL_01}Re-roll {combatant.typeabbrseq}'s {combatant.initiative} initiative? (<Enter> for No, A for Auto-roll, M for Manual-entry) ")
                 if len(initiative_reroll) == 0: # keep existing initiative
                     continue
                 elif initiative_reroll == 'M':  # manually enter new initiative
@@ -317,11 +324,11 @@ def get_all_combatants_initiative(ui, encounter) -> None:
             
             # auto-roll new initiative
             combatant.initiative = encounter.roll_nonplayer_initiative()
-            ui.output(f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative set to {combatant.initiative}")
+            ui.output(f"{ui.INDENT_LEVEL_01}{combatant.typeabbrseq}'s initiative set to {combatant.initiative}")
 
     encounter.check_duplicate_initiative()
     for combatant in encounter.combatants:
-        encounter.data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp)
+        encounter.combat_data.log_initiative(encounter.encounter, encounter.round, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp)
         
     return
 
@@ -333,53 +340,53 @@ def get_combatant_initiative(ui, encounter, combatant) -> None:
         encounter: current Encounter
         combatant: current Combatant
     """
-    initiative_prompt = f"{ui.INDENT_LEVEL_01}{combatant.abbrseq}'s initiative? "
+    initiative_prompt = f"{ui.INDENT_LEVEL_01}{combatant.typeabbrseq}'s initiative? "
     if combatant.initiative > 0:
         initiative_prompt += f"(<Enter> for previous value {combatant.initiative}) "
         
     while True:
-        if len(initiative := get_input(ui, initiative_prompt)) == 0:
-            initiative = combatant.initiative
-            return
-        
-        elif initiative.isnumeric() == False:
-            ui.output(f'{ui.INDENT_LEVEL_02}An initiative value of {initiative} is not numeric')
-            initiative = ''
+        if len(initiative_raw := get_input(ui, initiative_prompt)) == 0:    # Use previous value?
+            if combatant.initiative:                   # non-zero previous initiative value exists
+                initiative = combatant.initiative
+                ui.output(f'{ui.INDENT_LEVEL_02}Keeping previous initiative value of {combatant.initiative}')
+                return
+            
+            continue    # no initiative entered; try again
+
+        if not initiative_raw.isnumeric():             # check if initiative is not numeric
+            ui.output(f'{ui.INDENT_LEVEL_02}Initiative value of {initiative} is not a number')
             continue
-        
-        if int(initiative) < encounter.INITIATIVE_MINIMUM:
+
+        initiative = int(initiative_raw)
+        if initiative < encounter.INITIATIVE_MINIMUM:  # check if initiative is less than minimum
             ui.output(f'{ui.INDENT_LEVEL_02}An initiative value of {initiative} is less than {encounter.INITIATIVE_MINIMUM}')
-            initiative = ''
             continue
 
-        elif int(initiative) > encounter.INITIATIVE_MAXIMUM:
+        if initiative > encounter.INITIATIVE_MAXIMUM:  # check if initiative is greater than maximum
             ui.output(f'{ui.INDENT_LEVEL_02}An initiative value of {initiative} is more than {encounter.INITIATIVE_MAXIMUM}')
-            initiative = ''
             continue
 
-        elif int(initiative) < encounter.INITIATIVE_ACTIVE_MINIMUM:
-            inactive_initiative_prompt = f'{ui.INDENT_LEVEL_03}Initiative value {initiative} is for inactive combatants. Keep it? (<Enter> for Yes, N for No) '
-            if len(get_input(ui, inactive_initiative_prompt)) == 0:
-                combatant.initiative = int(initiative)
-                inactivereason = ''
-                while len(inactivereason) == 0:
-                    message = f'{ui.INDENT_LEVEL_04}Reason for inactivity? '
-                    if len(combatant.inactivereason) > 0:
-                        message += f'(<Enter> to keep previous value {combatant.inactivereason}, <Reason> for new inactive reason) '
-
-                    inactivereason = get_input(ui, message)
-                    ui.output('\n')
-                    
-                combatant.inactivereason = inactivereason
-                break
-            else:
+        if initiative < encounter.INITIATIVE_ACTIVE_MINIMUM:   # check if initiative is less than active minimum
+            if len(get_input(ui, f'{ui.INDENT_LEVEL_03}Initiative value {initiative} is for inactive combatants. Keep it? (<Enter> for Yes, N for No) ')):
                 continue
-        else:
-            combatant.initiative = int(initiative)
-            break
+
+            combatant.initiative = initiative
+            inactivereason = ''
+            while len(inactivereason) == 0:
+                message = f'{ui.INDENT_LEVEL_04}Reason for inactivity? '
+                if len(combatant.inactivereason) > 0:
+                    message += f'(<Enter> to keep previous value {combatant.inactivereason}, <Reason> for new inactive reason) '
+
+                inactivereason = get_input(ui, message)
+                
+            combatant.inactivereason = inactivereason
+        
+        combatant.initiative = initiative
+        break
 
 def get_defenders(ui, encounter, attacker) -> list:
-    """get a list of defenders
+    """get a list of defenders by typeabbrseq and/or group
+    This function allows the user to enter a comma-delimited list of defenders by typeabbrseq and/or group.
     
     Args:
         ui: user interface
@@ -390,7 +397,7 @@ def get_defenders(ui, encounter, attacker) -> list:
         defenders: list of Combatant defenders
     """
     defenders = []
-    special_attack_defenders_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited defenders by abbrseq and/or #group: "
+    special_attack_defenders_message = f"{ui.INDENT_LEVEL_02}Enter comma-delimited defenders by typeabbrseq and/or #group: "
     special_attack_defenders_raw = ''
     while len(special_attack_defenders_raw) == 0:
         if len(special_attack_defenders_raw := get_input(ui, special_attack_defenders_message)) == 0:
@@ -417,7 +424,7 @@ def get_defenders(ui, encounter, attacker) -> list:
         
         # handle missing defender
         missing_defender = ''
-        missing_defender_message = f"{ui.INDENT_LEVEL_03}defender \'{special_attack_defender_raw}\' is not in the combatant list. Re-enter abbrseq or [Enter] to ignore? "
+        missing_defender_message = f"{ui.INDENT_LEVEL_03}defender \'{special_attack_defender_raw}\' is not in the combatant list. Re-enter typeabbrseq or [Enter] to ignore? "
         while missing_defender == '':
             missing_defender = get_input(ui, missing_defender_message).strip()
             
@@ -437,16 +444,27 @@ def get_defenders(ui, encounter, attacker) -> list:
         special_attack_defenders.append(missing_defender)
     
     if len(special_attack_defenders) == 0:
-        return
+        return []
     
-    # build defender group list
+    # remove duplicates
+    special_attack_defenders = list(set(special_attack_defenders))
+    
+    # build list of defender groups
     special_attack_groups = [group[1:] for group in special_attack_defenders if group[0:1] == '#']
     
-    # append unique group defenders to defender list
-    [special_attack_defenders.append(combatant.abbrseq) for combatant in encounter.combatants if (combatant.abbrseq != attacker.abbrseq) and (combatant.group in special_attack_groups) and (combatant.abbrseq not in special_attack_defenders) and (combatant.is_alive())]
+    # append group defenders to defender list
+    [special_attack_defenders.append(combatant.typeabbrseq) 
+        for combatant in encounter.combatants 
+            if (has_common_substring_elements(combatant.group.split(','), special_attack_groups))
+                and (combatant.typeabbrseq not in special_attack_defenders) 
+                and (combatant.is_alive())
+    ]
 
+    # remove attacker from defender list
+    special_attack_defenders = [defender for defender in special_attack_defenders if defender != attacker.typeabbrseq]
+    
     # get defenders (ignoring groups)
-    [defenders.append(combatant) for combatant in encounter.combatants if combatant.abbrseq in special_attack_defenders]
+    [defenders.append(combatant) for combatant in encounter.combatants if combatant.typeabbrseq in special_attack_defenders]
     
     return defenders
 
@@ -466,13 +484,13 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
         message += "<Enter> for autoroll, "
 
     message += f"{encounter.TO_HIT_DIE_MINIMUM}-{encounter.TO_HIT_DIE_MAXIMUM} manual entry) "
-        
     to_hit_input = ''
+    to_hit_roll = encounter.TO_HIT_DIE_MINIMUM
     while to_hit_input == '':
-        to_hit_input = get_input(ui, message)
-        if to_hit_input.isnumeric() == False:
+        to_hit_input = get_input(ui, message)   # allow empty input for auto-roll
+        if not to_hit_input.isnumeric():
             if combatant.is_player_character():
-                ui.output(f"{ui.INDENT_LEVEL_03}'To Hit' roll of '{to_hit_input}' is not a number.")
+                ui.output(f"{ui.INDENT_LEVEL_03}'To Hit' roll must be numeric.")
                 to_hit_input = ''
                 continue
             else:
@@ -484,9 +502,27 @@ def get_to_hit_roll(ui, encounter, combatant) -> int:
             ui.output(f"{ui.INDENT_LEVEL_03}'To Hit' roll must be between {encounter.TO_HIT_DIE_MINIMUM} and {encounter.TO_HIT_DIE_MAXIMUM}. Entered {to_hit_roll} value.")
             to_hit_input = ''
             continue
-    
+
     ui.output(f'{ui.INDENT_LEVEL_02}ROLLED {to_hit_roll}')    
     return to_hit_roll
+
+def has_common_substring_elements(list1: list, list2: list) -> bool:
+    """check if two lists have common substring elements
+    This function checks if any element in list1 is a substring of any element in list2 or vice versa.
+
+    Args:
+        list1 (_type_): list of elements to check against list2
+        list2 (_type_): list of elements to check against list1
+
+    Returns:
+        bool: True if any element in list1 is a substring of any element in list2 or vice versa, False otherwise
+    """
+    for item1 in list1:
+        for item2 in list2:
+            if str(item1) == str(item2) or str(item2) == str(item1):
+                return True
+
+    return False
     
 def initialize_round(ui, encounter) -> None:
     """initialize round for attacks
@@ -503,36 +539,29 @@ def initialize_round(ui, encounter) -> None:
     ui.output(encounter.format_combatants())
     encounter.combatant_attack_number = 1
     
-def is_negative_number_digit(n: str) -> bool:
-    """check for negative number in passed string value
-    
-    args:
-        n: string value to check for negative number
-    returns:
-        True if negative number, False otherwise
-    """
-    try:
-        int(n)
-        return True
-    except ValueError:
-        return False
-
-def log_hit_action(encounter, attacker, defender, damage, xp_total, xp_earned, message) -> None:
-    """write hit data activity to log
-    
-    args:
+def log_hit_action(encounter, attacker, defender, damage: int, isdefenderdamaged: bool, xp_total: int, xp_earned: int, message: str):
+    """log hit action
+    Args:
         encounter: current Encounter
         attacker: current Combatant attacker
         defender: current Combatant defender
         damage: int value of damage
-        xp_total: int value of defender's total xp
-        xp_earned: int value of defender's earned xp
-        message: string message to log
+        isdefenderdamaged: bool value of defender damaged
+        xp_total: int value of total xp
+        xp_earned: int value of earned xp
+        message: str message to log
     """
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, xp_total, xp_earned, message+' BEFORE')
-    defender.take_damage(damage)
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
-    encounter.data.update_combatant_hit_points(defender.combattype, defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    encounter.combat_data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, damage, xp_total, xp_earned, message+' BEFORE')
+    if isdefenderdamaged:
+        defender.take_damage(damage)
+    else:
+        attacker.take_damage(damage)
+        
+    encounter.combat_data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, 0, 0, message+' AFTER')
+    if isdefenderdamaged:
+        encounter.combat_data.update_combatant_hit_points(defender.combattype, defender.abbr, defender.seq, defender.hpmax, defender.hp)    # update db with new post-damage hp
+    else:
+        encounter.combat_data.update_combatant_hit_points(attacker.combattype, attacker.abbr, attacker.seq, attacker.hpmax, attacker.hp)
 
 def process_attack_sequence(ui, encounter) -> bool:
     """process each attack: Return True for additional post-attacks check or False for no post-attack checks
@@ -550,7 +579,7 @@ def process_attack_sequence(ui, encounter) -> bool:
     ui.output(f"{encounter.format_encounter()} | {encounter.format_attack_type()} Attacks")
     ui.output(encounter.format_combatants())
     if attacker.is_inactive():
-        message = f'\n{ui.INDENT_LEVEL_01}{attacker.abbrseq} is currently inactive.'
+        message = f'\n{ui.INDENT_LEVEL_01}{attacker.typeabbrseq} is currently inactive.'
         if len(attacker.inactivereason) > 0:
             message += f' (last status: {attacker.inactivereason})'
             
@@ -562,9 +591,9 @@ def process_attack_sequence(ui, encounter) -> bool:
                 encounter.check_duplicate_initiative()
                 if (attacker.initiative >= encounter.INITIATIVE_ACTIVE_MINIMUM):
                     attacker.inactivereason = ''
-                    ui.output(f'{ui.INDENT_LEVEL_02}{attacker.abbrseq} will be able to attack next round')
+                    ui.output(f'{ui.INDENT_LEVEL_02}{attacker.typeabbrseq} will be able to attack next round')
                 else:
-                    ui.output(f'{ui.INDENT_LEVEL_02}{attacker.abbrseq} will remain inactive')
+                    ui.output(f'{ui.INDENT_LEVEL_02}{attacker.typeabbrseq} will remain inactive')
                     
                 return True
             else:
@@ -573,7 +602,7 @@ def process_attack_sequence(ui, encounter) -> bool:
         encounter.initiative = attacker.initiative - 1
         return False
 
-    ui.output(f'\n{ui.INDENT_LEVEL_01}{attacker.abbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
+    ui.output(f'\n{ui.INDENT_LEVEL_01}{attacker.typeabbrseq} turn: {attacker.AttacksPerRound} attack(s)/round')
     ui.output(f'{ui.INDENT_LEVEL_02}{encounter.format_attack_type()} Attack #{encounter.combatant_attack_number}')
 
     if attacker.is_dungeon_master():
@@ -633,7 +662,6 @@ def process_attack_regular(ui, encounter, attacker) -> None:
             (attacker.was_hit_successful(to_hit_roll, defender.ac, defender.defensemodifier)
         ):
         # hit defender
-        
         if len(special_defense_message := defender.format_special_defense()): 
             ui.output(special_defense_message)
 
@@ -644,19 +672,19 @@ def process_attack_regular(ui, encounter, attacker) -> None:
             message += " hit"
             
         damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_02}Enter {message} damage: ')
-        log_hit_action(encounter, attacker, defender, damage, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message)
-        ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.combattype} {defender.abbrseq} for {damage} points damage ({defender.hp} remaining)')
+        log_hit_action(encounter, attacker, defender, damage, True, defender.xp, encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp), message)
+        ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.typeabbrseq} for {damage} points damage ({defender.hp} remaining)')
         if defender.is_alive() == False:
             encounter.foe_count -= 1
-            attacker.defender_abbrseq = ''
+            attacker.defender_typeabbrseq = ''
         
         return
     
     # missed defender
     message += " missed"
-    encounter.data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, defender.xp, 0, message)
-    ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.combattype} {defender.abbrseq}')
-    if ( to_hit_roll != encounter.ATTACK_CRITICAL_FUMBLE ):
+    encounter.combat_data.log_action(encounter.encounter, encounter.round, attacker.combattype, attacker.abbr, attacker.seq, attacker.group, attacker.initiative, encounter.combatant_attack_number, defender.combattype, defender.abbr, defender.seq, defender.group, defender.initiative, defender.hpmax, defender.hp, 0, defender.xp, 0, message)
+    ui.output(f'{ui.INDENT_LEVEL_03}{message} {defender.typeabbrseq}')
+    if (to_hit_roll != encounter.ATTACK_CRITICAL_FUMBLE):
         return
 
     # check if critically fumbled attack
@@ -665,12 +693,12 @@ def process_attack_regular(ui, encounter, attacker) -> None:
 
     # process critical fumble
     penalty_xp = 0
-    damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_05}Enter {attacker.abbr}{attacker.seq} fumble damage: ')
+    damage = get_numeric_input(ui, f'{ui.INDENT_LEVEL_05}Enter {attacker.typeabbrseq} fumble damage: ')
     if attacker.combattype == encounter.COMBATTYPE_FRIEND:
         penalty_xp = get_numeric_input(ui, f"{ui.INDENT_LEVEL_05}Enter penalty xp (-number): ")
 
     message = encounter.format_attack_type() + " fumbled/cursed damage"
-    log_hit_action(encounter, attacker, defender, damage, 0, penalty_xp, message)
+    log_hit_action(encounter, attacker, defender, damage, False, 0, penalty_xp, message)
     return
 
 def process_attack_special(ui, encounter, attacker) -> None:
@@ -689,8 +717,12 @@ def process_attack_special(ui, encounter, attacker) -> None:
     defender_list_verified = False
     while defender_list_verified == False:
         defenders = get_defenders(ui, encounter, attacker)
-        defender_list = [defender.abbrseq for defender in defenders]
+        if defenders == []:
+            ui.output(f"{ui.INDENT_LEVEL_03}No defenders found. Try again!")
+            continue
+
         defender_list_prompt = f"{ui.INDENT_LEVEL_03}defender list:"
+        defender_list = [defender.typeabbrseq for defender in defenders]
         defender_list_prompt += f"\n{ui.INDENT_LEVEL_04}{('\n'+ui.INDENT_LEVEL_04).join(defender_list)}\n"
         defender_list_prompt += f"{ui.INDENT_LEVEL_03}Is this defender list correct? ([Enter for Yes, N for No]) "
         if len(ui.get_input(defender_list_prompt)) == 0:
@@ -728,14 +760,14 @@ def process_attack_special(ui, encounter, attacker) -> None:
 
     # process special attack vs. defenders
     for index, defender in enumerate(defenders, 1):
-        ui.output(f"{ui.INDENT_LEVEL_02}Defender: {defender.abbrseq}")
+        ui.output(f"{ui.INDENT_LEVEL_02}Defender: {defender.typeabbrseq}")
         saving_throw_modifier = 1.0
         if saving_throw_permitted == True:
             saving_throw = encounter.get_saving_throw(defender.savingthrowclasstype, defender.savingthrowlevel, defender.savingthrowlevelpdm, cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type])
             if defender.is_player_character():
                 saving_throw_value = 0
                 while saving_throw_value == 0:
-                    saving_throw_value_raw = get_numeric_input(ui, f"{ui.INDENT_LEVEL_03}Enter {defender.abbrseq}'s save vs. {cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type]}: ({saving_throw} needed) ", ui.INDENT_LEVEL_04)
+                    saving_throw_value_raw = get_numeric_input(ui, f"{ui.INDENT_LEVEL_03}Enter {defender.typeabbrseq}'s save vs. {cm1.Saving_Throw.SAVING_THROW_TYPE[saving_throw_type]}: ({saving_throw} needed) ", ui.INDENT_LEVEL_04)
                     if (saving_throw_value_raw > 0) and (saving_throw_value_raw <= encounter.TO_HIT_DIE):
                         saving_throw_value = saving_throw_value_raw
                         break
@@ -771,14 +803,14 @@ def process_attack_special(ui, encounter, attacker) -> None:
 
         if attacker.combattype == encounter.COMBATTYPE_FRIEND and defender.combattype == encounter.COMBATTYPE_FRIEND:
             # Attacker is performing special attack on defender friend (typically healing)
-            xp_prompt = f'{ui.INDENT_LEVEL_03}Enter {attacker.abbrseq} xp: '
+            xp_prompt = f'{ui.INDENT_LEVEL_03}Enter {attacker.typeabbrseq} xp: '
             earned_xp_base = get_numeric_input(ui, xp_prompt)
         else:
             # Calculate xp
             earned_xp_base = encounter.calculate_earned_xp(defender.hpmax, defender.hp, damage, defender.xp)
         
         earned_xp = int(earned_xp_base * saving_throw_modifier)
-        log_hit_action(encounter, attacker, defender, damage, defender.xp, earned_xp, message)
+        log_hit_action(encounter, attacker, defender, damage, True, defender.xp, earned_xp, message)
         ui.output(ui.INDENT_LEVEL_04+output_message.replace('~~', str(damage))+f' points damage ({defender.hp} remaining)\n')
 
     return
@@ -796,7 +828,7 @@ def process_set_initiative(ui, encounter) -> None:
         if len(raw_initiative) == 0:
             return
         
-        if raw_initiative.isnumeric() == False:
+        if not raw_initiative.isnumeric():
             ui.output('{ui.INDENT_LEVEL_01}Initiative must be numeric. Try again')
             raw_initiative = ''
             continue
@@ -860,6 +892,7 @@ def process_round(ui, encounter) -> None:
                 if len(get_input(ui, continue_attack_prompt)) > 0:
                     encounter.delete_dead_oponents()
                     ui.output(f'\nRound {encounter.round} ENDED *PREMATURALLY*')
+                    encounter.delete_dead_oponents()
                     encounter.prepare_next_round()
                     ui.output(encounter.format_encounter())
                     return

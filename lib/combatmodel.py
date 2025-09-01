@@ -1,7 +1,7 @@
 #combatmodel.py
 
 from lib.dice import Dice
-import lib.combatdata as cd1
+import lib.combatdatafactory as cdf1
 import lib.ui as ui1
 
 class Combatant():
@@ -68,13 +68,13 @@ class Combatant():
         self.notes: str  = self.Notes
         self.regenerationroundstart: int = self.RegenerationRoundStart
         self.regenerationhitpoint: int = self.RegenerationHitPoint
-        self.regenerateafterdamage: int = self.RegenerateAfterDamage
+        self.regenerateafterdamage: int = self.RegenerationAfterDamage
         
         # Assign member variables to parameters        
         self.combattype: str = combattype
         self.group: str = group
         self.seq: int = seq
-        self.abbrseq: str = self.abbr + str(self.seq)
+        self.typeabbrseq: str = self.combattype[0:2] + self.abbr + str(self.seq)
         if initiative is None:
             self.initiative: int = 0
         else:
@@ -109,7 +109,7 @@ class Combatant():
         if self.ExperienceAddHitPoint:
             self.xp += self.hp
         
-        self.defender_abbrseq: str = ''
+        self.defender_typeabbrseq: str = ''
         self.inactivereason: str  = ''
         self.regenerationround: int = 0
         
@@ -425,10 +425,6 @@ class Combatant():
             damage: int
         """
         self.hp -= damage
-        if self.hp < 0:
-            self.hp = 0
-            return
-            
         if self.hp > self.hpmax:
             self.hp = self.hpmax
 
@@ -451,6 +447,11 @@ class Encounter():
     """Encounter container for tracking all combatant attacks by round"""
 
     # Constants
+    ATTACK_CRITICAL_FUMBLE       = 1
+    ATTACK_CRITICAL_HIT          = 20
+    COMBATTYPE_FRIEND            = 'FRIEND'
+    COMBATTYPE_FOE               = 'FOE'
+    # CONFIG_FILE                  = r'C:\users\jkraxberger\pyproj\github\mm\config.ini'
     INITIATIVE_DIE_MAJOR         = 6
     INITIATIVE_DIE_MINOR         = 999
     INITIATIVE_INACTIVE_MINIMUM  = 0
@@ -463,25 +464,22 @@ class Encounter():
     TO_HIT_DIE                   = 20
     TO_HIT_DIE_MINIMUM           = 1
     TO_HIT_DIE_MAXIMUM           = 30
-
-    ATTACK_CRITICAL_FUMBLE       = 1
-    ATTACK_CRITICAL_HIT          = 20
-
-    COMBATTYPE_FRIEND            = 'FRIEND'
-    COMBATTYPE_FOE               = 'FOE'
     
     # Attributes
     friend_count: int = 0
     foe_count: int = 0
     combatant_attack_number: int = 1
     combatants: list = []
-
+    
+    # def __init__(self, combat_data) -> None:
     def __init__(self) -> None:
         self.encounter: int = 1
         self.round: int = 1
         self.initiative: int = self.INITIATIVE_ACTIVE_MAXIMUM
         self.ismissileattack: bool = True
-        self.data = cd1.CombatData()
+        combat_data_factory = cdf1.CombatDataFactory()
+        self.combat_data, self.database_type, self.database_connector = combat_data_factory.create_combatdata()
+        ui1.UI.output(f"Database '{self.database_type}' method '{self.database_connector}'")
         self.load_saving_throws()
 
     def calculate_earned_xp(self, originalhp: int, hp: int, damage: int, xp: int) -> int:
@@ -547,21 +545,21 @@ class Encounter():
     
     def delete_dead_oponents(self) -> None:
         """delete dead opponents from database and active combat list"""
-        self.data.delete_dead_foes()
+        self.combat_data.delete_dead_foes()
         for combatant in self.combatants:
             if combatant.combattype == self.COMBATTYPE_FOE and combatant.is_dead():
                 self.combatants.remove(combatant)
 
-    def find_combatant(self, abbrseq) -> Combatant:
+    def find_combatant(self, typeabbrseq) -> Combatant:
         """find combatant using abbrseq key
         
         args:
-            abbrseq: str
+            typeabbrseq: str
         returns:
             Combatant: combatant object
         """
         for combatant in self.combatants:
-            if combatant.abbrseq == abbrseq:
+            if combatant.typeabbrseq == typeabbrseq:
                 return Combatant
             
         return None
@@ -612,23 +610,23 @@ class Encounter():
         returns:
             str: formatted combatant information
         """
-        SEPARATOR_LINE_LENGTH = 103
+        SEPARATOR_LINE_LENGTH = 95
         SIZE = {"S": "SMALL", "M": "MEDIUM", "L": "LARGE"}
         
         """format all combatant information"""
         message: str = '\nCombatants:'
         message += '\n'+'='*SEPARATOR_LINE_LENGTH
-        message += f'\n       |                                 |    SIZE     |      |       |       |    |        | ATT | DEF'
-        message += f'\n TYPE  | ABBRSEQ  NAME                   | RAC:CLS-LVL | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
+        message += f'\n                                 |    SIZE     |      |       |       |    |        | ATT | DEF'
+        message += f'\nTYPEABBRSEQ  NAME                | RAC:CLS-LVL | INIT | GROUP | THAC0 | AC | HP/MAX | +/- | +/-'
         linecount = 0
         for combatant in self.combatants:
             if linecount % 3 == 0:
-                message += f'\n------ | -------- ---------------------- | ----------- | ---- | ----- | ----- | -- | ------ | --- | ---'
+                message += f'\n------------ ------------------- | ----------- | ---- | ----- | ----- | -- | ------ | --- | ---'
 
             if combatant.is_monster():
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |    {SIZE[combatant.size].ljust(6)}   | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.typeabbrseq.ljust(12)} {combatant.name.ljust(19)} |    {SIZE[combatant.size].ljust(6)}   | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
             else:
-                message += f'\n{combatant.combattype.ljust(6)} | {combatant.abbrseq.ljust(8)} {combatant.name.ljust(22)} |   {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)}  | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
+                message += f'\n{combatant.typeabbrseq.ljust(12)} {combatant.name.ljust(19)} |   {combatant.racetype}:{combatant.classtype}-{combatant.level.ljust(2)}  | {str(combatant.initiative).rjust(4)} | {str(combatant.group).rjust(5)} |  {str(combatant.thac0).rjust(3)}  |{str(combatant.ac).rjust(3)} |{str(combatant.hp).rjust(3)}/{str(combatant.hpmax).ljust(4)}|  {str(combatant.attackmodifier).rjust(2)} | {str(combatant.defensemodifier).rjust(2)}'
                 
             linecount += 1
         
@@ -646,12 +644,12 @@ class Encounter():
 
     def get_combatants(self) -> dict:
         """get combatants from participant database"""
-        self.data.load_combatants()
-        combatantdata: dict = self.data.combatants
+        self.combat_data.load_combatants()
+        combatantdata: dict = self.combat_data.combatants
         combatants = []
         for combatant in combatantdata:
             abbr: str = combatantdata[combatant].get("Abbr")
-            participant: str = self.data.participants.get(abbr)
+            participant: str = self.combat_data.participants.get(abbr)
             combattype: str = combatantdata[combatant].get("CombatType")
             combatgroup: str = combatantdata[combatant].get("group")
             combatsequence: int = combatantdata[combatant].get("seq")
@@ -694,16 +692,16 @@ class Encounter():
                 
         return savingthrowvalue
             
-    def is_combatant(self, abbrseq: str) -> bool:
-        """check if passed abbrseq key is in the active combatant list
+    def is_combatant(self, typeabbrseq: str) -> bool:
+        """check if passed typeabbrseq key is in the active combatant list
         
         args:
-            abbrseq: str
+            typeabbrseq: str
         returns:
-            bool: True if abbrseq key is in the active combatant list, False otherwise
+            bool: True if typeabbrseq key is in the active combatant list, False otherwise
         """
         for combatant in self.combatants:
-            if combatant.abbrseq == abbrseq:
+            if combatant.typeabbrseq == typeabbrseq:
                 return True
             
         return False
@@ -711,18 +709,18 @@ class Encounter():
     def load_combatants(self) -> None:
         """load combatant information"""
         if len(self.combatants) > 0:
-            combatant_saved_initiative: dict = {combatant.abbrseq: combatant.initiative for combatant in self.combatants}
+            combatant_saved_initiative: dict = {combatant.typeabbrseq: combatant.initiative for combatant in self.combatants}
             
         self.combatants = self.get_combatants()
         if self.combatants:
             for combatant in self.combatants:
                 # update FOE combatants hit points
                 if combatant.combattype == self.COMBATTYPE_FOE:
-                    self.data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
+                    self.combat_data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)
 
                 # save combatant initiative (if exists)
                 try:
-                    saved_initiative: int = combatant_saved_initiative[combatant.abbrseq]
+                    saved_initiative: int = combatant_saved_initiative[combatant.typeabbrseq]
                     if saved_initiative > self.INITIATIVE_INACTIVE_MINIMUM:
                         combatant.initiative = saved_initiative
                 except:
@@ -736,14 +734,14 @@ class Encounter():
 
     def load_participants(self) -> None:
         """load participant information"""
-        self.data.load_participants()
-        ui1.UI.output(f'\nParticipants loaded: {len(self.data.participants)}')
+        self.combat_data.load_participants()
+        ui1.UI.output(f'\nParticipants loaded: {len(self.combat_data.participants)}')
         
     def load_saving_throws(self) -> None:
         """load savings throw information"""
         self.savingthrows = []
-        self.data.load_saving_throws()
-        savingthrowdata: int = self.data.savingthrows
+        self.combat_data.load_saving_throws()
+        savingthrowdata: int = self.combat_data.savingthrows
         for savingthrow in savingthrowdata:
             classtype: str = savingthrowdata[savingthrow].get("ClassType")
             level: int = savingthrowdata[savingthrow].get("Level")
@@ -798,11 +796,11 @@ class Encounter():
             combatant.regenerationround += 1
 
             # (No regeneration starting round specified and can regenerate without waiting) or (regeneration round specified and regeneration round >= regeneration round start
-            if ((combatant.regenerationroundstart == 0) and (combatant.regenerateafterdamage == False)) or ((combatant.regenerationroundstart > 0) and (combatant.regenerationround >= combatant.regenerationroundstart)):
-                self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, combatant.regenerationhitpoint, 0, 0, 'regenerate hit point BEFORE')
+            if ((combatant.regenerationroundstart == 0) and (combatant.regenerationafterdamage == False)) or ((combatant.regenerationroundstart > 0) and (combatant.regenerationround >= combatant.regenerationroundstart)):
+                self.combat_data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, combatant.regenerationhitpoint, 0, 0, 'regenerate hit point BEFORE')
                 combatant.regenerate_hitpoints()
-                self.data.update_combatant_hit_points(combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)    # update db with new regenerated hp
-                self.data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, 0, 0, 0, 'regenerate hit point AFTER')
+                self.combat_data.update_combatant_hit_points(combatant.combattype, combatant.abbr, combatant.seq, combatant.hpmax, combatant.hp)    # update db with new regenerated hp
+                self.combat_data.log_action(self.encounter, self.round, None, None, None, None, None, None, combatant.combattype, combatant.abbr, combatant.seq, combatant.group, combatant.initiative, combatant.hpmax, combatant.hp, 0, 0, 0, 'regenerate hit point AFTER')
 
     def roll_nonplayer_initiative(self) -> int:
         """determine initiative value for non-players (Non-Player Characters [NPC] and Monsters [M])

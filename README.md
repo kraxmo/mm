@@ -10,4 +10,6 @@ Combat tracking is round-based. Encounters have rounds, and rounds have initiati
 
 Spell use and attacks vs. multiple opponents occur during attack with a 0 to-hit roll on d20
 
-Uses SQLAlchemy Core to communicate with backend database
+Uses SQLAlchemy Core and ORM to communicate with backend database. ORM has better performance than Core but worse than PYODBC.
+
+Working to eliminate Microsoft Access by creating database maintenance window capability. Once done, I can fully switch to SQLite or cloud db like Snowflake or other...

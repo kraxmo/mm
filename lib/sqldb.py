@@ -11,4 +11,4 @@ class SQLDB():
         else:
             self.autocommit = autocommit
             
-        self.__connection = None
+        self.connection = None

@@ -245,16 +245,24 @@ class TestCombatModel(TestCase):
 
     def test_find_combatant_known(self):
         for combatant in self.encounter.combatants:
+            type = combatant.combattype
             abbr = combatant.abbr
             seq  = combatant.seq
-            abbrseq = abbr+str(seq)
-            with self.subTest(abbrseq=abbrseq):
-                self.assertIsNotNone(self.encounter.find_combatant(abbrseq))
+            #abbrseq = abbr+str(seq)
+            abbrseq = type+abbr+str(seq)
+            #with self.subTest(abbrseq=abbrseq):
+            with self.subTest(typeabbrseq=typeabbrseq):
+                #self.assertIsNotNone(self.encounter.find_combatant(abbrseq))
+                self.assertIsNotNone(self.encounter.find_combatant(typeabbrseq))
 
     def test_find_combatant_unknown(self):
         for combatant in self.encounter.combatants:
+            type = 'FRIEND'
             abbr = 'BIF'
             seq  = '99'
-            abbrseq = abbr+str(seq)
-            with self.subTest(abbrseq=abbrseq):
-                self.assertIsNone(self.encounter.find_combatant(abbrseq))
+            #abbrseq = abbr+str(seq)
+            typeabbrseq = type+abbr+str(seq)
+            #with self.subTest(abbrseq=abbrseq):
+            with self.subTest(typeabbrseq=typeabbrseq):
+                #self.assertIsNone(self.encounter.find_combatant(abbrseq))
+                self.assertIsNone(self.encounter.find_combatant(typeabbrseq))
